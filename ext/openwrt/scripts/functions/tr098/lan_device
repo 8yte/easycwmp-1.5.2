@@ -6,19 +6,40 @@
 #   Entry point functuons   #
 #############################
 
+CWMP_LAN_IF="br-lan"
+
 prefix_list="$prefix_list $DMROOT.LANDevice."
 entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_LANDevice"
 
 entry_execute_method_root_LANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.LANDevice."*)
 		common_execute_method_obj "$DMROOT.LANDevice." "0"
-		common_execute_method_obj "$DMROOT.LANDevice.1." "0"
+		common_execute_method_obj "$DMROOT.LANDevice.1." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Number_Of_Entries $1"
 		common_execute_method_obj "$DMROOT.LANDevice.1.WLANConfiguration." "1" "lan_device_add_wlan_iface" "" "lan_device_browse_instances_wlan_iface $1"
+		common_execute_method_obj "$DMROOT.LANDevice.1.Hosts." "0"
+		common_execute_method_obj "$DMROOT.LANDevice.1.Hosts.Host." "0" "" "" "lan_device_browse_instances_Hosts_Host $1"
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Config $1"
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Config_Stats $1"
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement." "0" "" "" "lan_device_browse_instances_LAN_Host_Config_Management $1"
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1." "0" "" "" "lan_device_browse_instances_LAN_Host_Config_Management_Ip_Interface $1"
 		return 0
 		;;
 	esac
 	return $E_INVALID_PARAMETER_NAME;
 }
+
+sub_entry_landevic_LAN_Ethernet_Interface_Number_Of_Entries() {
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.LANDevice.1." && {
+		common_execute_method_obj "$DMROOT.LANDevice.1." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceNumberOfEntries" "0" "get_lan_device_lan_ethernet_interface_number_of_entries" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANWLANConfigurationNumberOfEntries" "0" "get_lan_device_lan_wlan_configuration_number_of_entries" "" "" "1"
+		return 0
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
 
 sub_entry_landevice_wlanconfig() {
 	local j="$2"
@@ -32,9 +53,72 @@ sub_entry_landevice_wlanconfig() {
 	return $E_INVALID_PARAMETER_NAME;
 }
 
+sub_entry_landevice_Hosts_Host() {
+	return 0;
+}
+
+sub_entry_landevice_LAN_Ethernet_Interface_Config() {
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." && {
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.MACAddress" "0" "get_lan_device_lan_ethernet_interface_config_macaddress" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Status" "0" "get_lan_device_lan_ethernet_interface_config_status" "" "" "1"
+		return 0
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+sub_entry_landevice_LAN_Ethernet_Interface_Config_Stats() {
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Stats." && {
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Stats." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Stats.BytesSent" "0" "get_lan_device_lan_ethernet_interface_config_stats_bytessent" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Stats.BytesReceived" "0" "get_lan_device_lan_ethernet_interface_config_stats_bytesreceived" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Stats.PacketsSent" "0" "get_lan_device_lan_ethernet_interface_config_stats_packetssent" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Stats.PacketsReceived" "0" "get_lan_device_lan_ethernet_interface_config_stats_packetsreceived" "" "" "1"
+		return 0
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+sub_entry_landevice_LAN_Host_Config_Management(){
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.LANDevice.1.LANHostConfigManagement." && {
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_device_lan_host_config_management_dhcp_server_enable" "set_lan_device_lan_host_config_management_dhcp_server_enable" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.MinAddress" "1" "get_lan_device_lan_host_config_management_min_address" "set_lan_device_lan_host_config_management_min_address" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.MaxAddress" "1" "get_lan_device_lan_host_config_management_max_address" "set_lan_device_lan_host_config_management_max_address" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DHCPLeaseTime" "1" "get_lan_device_lan_host_config_management_dhcp_lease_time" "set_lan_device_lan_host_config_management_dhcp_lease_time" "" "1"
+		return 0 
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+sub_entry_landevice_LAN_Host_Config_Management_Ip_Interface(){
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1." && {
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1.IPInterfaceIPAddress" "1" "get_lan_device_lan_host_config_management_ip_interface_ip_interface_ip_address" "set_lan_device_lan_host_config_management_ip_interface_ip_interface_ip_address" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1.IPInterfaceSubnetMask" "0" "get_lan_device_lan_host_config_management_ip_interface_ip_interface_subnet_mask" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1.IPInterfaceAddressingType" "0" "get_lan_device_lan_host_config_management_ip_interface_ip_interface_addressing_type" "" "" "1"
+		return 0 
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
 #######################################
 #     Data model browse instances     #
 #######################################
+
+
+lan_device_browse_instances_LAN_Ethernet_Interface_Number_Of_Entries(){
+	sub_entry_landevic_LAN_Ethernet_Interface_Number_Of_Entries "$1" "1" "1"
+	return 0
+}
 
 lan_device_browse_instances_wlan_iface() {
 	local iface ifaces=`$UCI_SHOW wireless | grep "wireless\.@wifi-iface\[.*\]=wifi-iface" | awk -F'[.=]' '{print $2}'` 
@@ -45,9 +129,209 @@ lan_device_browse_instances_wlan_iface() {
 	return 0
 }
 
+lan_device_browse_instances_LAN_Ethernet_Interface_Config() {
+	sub_entry_landevice_LAN_Ethernet_Interface_Config "$1" "1" "1"
+	return 0
+}
+
+lan_device_browse_instances_Hosts_Host() {
+	sub_entry_landevice_Hosts_Host "$1" "1" "1"
+	return 0
+}
+
+lan_device_browse_instances_LAN_Ethernet_Interface_Config_Stats(){
+	sub_entry_landevice_LAN_Ethernet_Interface_Config_Stats "$1" "1" "1"
+	return 0
+}
+ 
+lan_device_browse_instances_LAN_Host_Config_Management(){
+	sub_entry_landevice_LAN_Host_Config_Management "$1" "1" "1"
+	return 0
+}
+
+lan_device_browse_instances_LAN_Host_Config_Management_Ip_Interface(){
+	sub_entry_landevice_LAN_Host_Config_Management_Ip_Interface "$1" "1" "1"
+	return 0
+}
+
+
+
 #######################################
 #   Data model parameters functions   #
 #######################################
+
+
+# sub_entry_landevic_LAN_Ethernet_Interface_Number_Of_Entries #
+get_lan_device_lan_ethernet_interface_number_of_entries() {
+	local val=""
+	val="1"	
+	echo "$val"
+	return 0	
+}
+
+get_lan_device_lan_wlan_configuration_number_of_entries() {
+	local val=""
+	val="0"
+	echo "$val"
+	return 0	
+}
+
+# sub_entry_landevice_LAN_Ethernet_Interface_Config #
+get_lan_device_lan_ethernet_interface_config_status() {
+local tmp
+local val="Disable"
+
+	tmp=`ifconfig $CWMP_LAN_IF |grep $CWMP_LAN_IF |awk '{print $2}'`
+	if [ $tmp == "Link" ]; then
+		val="NoLink"
+	fi
+	tmp=`ifconfig $CWMP_LAN_IF |grep "inet addr" |awk '{print $1}'`
+	if [ $tmp == "inet" ]; then
+		val="Up"
+	fi
+	echo "$val"
+	
+return 0	
+}
+
+get_lan_device_lan_ethernet_interface_config_macaddress() {
+    local val=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n LANMAC -u uci_tmp.lan_information.lan_mac > /tmp/mid_log
+	val=`/usr/bin/uci get /tmp/uci_tmp.lan_information.lan_mac`
+	echo "$val"
+	return 0
+}
+
+# sub_entry_landevice_LAN_Ethernet_Interface_Config_Stats #
+get_lan_device_lan_ethernet_interface_config_stats_bytessent(){
+	local val=""
+	val=`cat /proc/net/dev |grep $CWMP_LAN_IF: | awk '{print $10;}'`
+	echo "$val"
+	return 0
+}
+
+get_lan_device_lan_ethernet_interface_config_stats_bytesreceived(){
+	local val=""
+	val=`cat /proc/net/dev |grep $CWMP_LAN_IF: | awk '{print $2;}'`
+	echo "$val"
+	return 0
+}
+
+get_lan_device_lan_ethernet_interface_config_stats_packetssent(){
+	local val=""
+	val=`cat /proc/net/dev |grep $CWMP_LAN_IF: | awk '{print $11;}'`
+	echo "$val"
+	return 0
+}
+
+get_lan_device_lan_ethernet_interface_config_stats_packetsreceived(){
+	local val=""
+	val=`cat /proc/net/dev |grep $CWMP_LAN_IF: | awk '{print $3;}'`
+	echo "$val"
+	return 0
+}
+
+# sub_entry_landevice_LAN_Host_Config_Management #
+get_lan_device_lan_host_config_management_dhcp_server_enable(){
+	local val=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPType -u uci_tmp.lan_information.dhcp_type > /tmp/mid_log
+	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.dhcp_enable`
+	echo "$val"
+	return 0
+}
+set_lan_device_lan_host_config_management_dhcp_server_enable(){
+	echo "set _____start______"
+	local val=$1
+	local tmp1,tmp2,tmp3
+	tmp1=`/usr/bin/uci get /tmp/uci_tmp.lan_information.dhcp_start`
+	tmp2=`/usr/bin/uci get /tmp/uci_tmp.lan_information.dhcp_end`
+	tmp3=`/usr/bin/uci get /tmp/uci_tmp.lan_information.lease_time`
+	if [ "$val" = "enable" ]; then
+		#managemidapp -o cusconf -p {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\"","\"DHCPStart\"":"\"$tmp1\"","\"DHCPEnd\"":"\"$tmp2\"","\"LeaseTime\"":"\"$tmp3\""}}} > /tmp/mid_log
+		echo {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\"","\"DHCPStart\"":"\"$tmp1\"","\"DHCPEnd\"":"\"$tmp2\"","\"LeaseTime\"":"\"$tmp3\""}}} | socat stdio /tmp/cusconf1
+	else
+		#managemidapp -o cusconf -p {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\""}}} > /tmp/mid_log
+		echo {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\""}}} | socat stdio /tmp/cusconf1
+	fi
+	
+	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.dhcp_enable="$val"
+	
+}
+
+get_lan_device_lan_host_config_management_min_address(){
+	local val=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPStart -u uci_tmp.lan_information.dhcp_start > /tmp/mid_log
+	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.range_from_ip`
+	echo "$val"
+	return 0
+}
+set_lan_device_lan_host_config_management_min_address(){
+	local val=$1
+	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.range_from_ip="$val"
+}
+
+get_lan_device_lan_host_config_management_max_address(){
+	local val=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPEnd -u uci_tmp.lan_information.dhcp_end > /tmp/mid_log
+	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.range_to_ip`
+	echo "$val"
+	return 0
+}
+set_lan_device_lan_host_config_management_max_address(){
+	local val=$1
+	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.range_to_ip="$val"
+}
+
+get_lan_device_lan_host_config_management_dhcp_lease_time(){
+	local val=""
+	#managemidapp -o cusconf -p {"\"ConfigGetReq\"":{"\"Oper\"":"\"LAN\""}} -n LeaseTime -u uci_tmp.lan_information.lease_time > /tmp/mid_log
+	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.lease_time_min`
+	echo "$val"
+	return 0
+}
+set_lan_device_lan_host_config_management_dhcp_lease_time(){
+	local val=$1
+	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.lease_time_min="$val"
+}
+
+# sub_entry_landevice_LAN_Host_Config_Management_Ip_Interface #
+get_lan_device_lan_host_config_management_ip_interface_ip_interface_ip_address() {
+	local val=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n IP -u uci_tmp.lan_information.lan_ip_address > /tmp/mid_log
+	val=`/usr/bin/uci get /etc/config/lte-gw.local_param.local_ip_addr`
+	echo "$val"
+	return 0	
+}
+set_lan_device_lan_host_config_management_ip_interface_ip_interface_ip_address() {
+	local val=$1
+	#managemidapp -o cusconf -p {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"IP\"":"\"$val\"","\"SubMask\"":"\"255.255.255.0\""}}} > /tmp/mid_log
+	echo {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"IP\"":"\"$val\"","\"SubMask\"":"\"255.255.255.0\""}}} | socat stdio /tmp/cusconf1
+	/usr/bin/uci get /etc/config/lte-gw.local_param.local_ip_addr="$val"
+}
+
+get_lan_device_lan_host_config_management_ip_interface_ip_interface_subnet_mask() {
+	local val=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n SubMask -u uci_tmp.lan_information.lan_subnet_mask > /tmp/mid_log
+	val=`/usr/bin/uci get /etc/config/lte-gw.local_param.local_ip_mask`
+#	val=`$UCI_GET /tmp/network_status.lan_information.lan_subnet_mask`
+	echo "$val"
+	return 0	
+}
+
+get_lan_device_lan_host_config_management_ip_interface_ip_interface_addressing_type() {
+	local val
+	local tmp=""
+	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPType -u uci_tmp.lan_information.dhcp_type > /tmp/mid_log
+	tmp=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.dhcp_enable`
+	if [ "$tmp" = "enable" ]; then
+		val="DHCP"
+	else
+		val="Static"	
+	fi
+	echo "$val"
+return 0
+}
+
 
 lan_device_get_wlan_enable() {
 	local val=`$UCI_GET wireless.wl0.disabled 2> /dev/null`
