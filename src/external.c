@@ -220,6 +220,9 @@ int external_init()
 	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 		log_message(NAME, L_CRIT, "ignoring pipe signal failed\n");
 
+	if (signal(SIGUSR1, SIG_IGN) == SIG_ERR)
+		log_message(NAME, L_CRIT, "ignoring pipe signal failed\n");
+
 	int r = external_read_pipe(NULL);
 	return r;
 }

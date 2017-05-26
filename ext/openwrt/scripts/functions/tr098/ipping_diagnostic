@@ -9,8 +9,8 @@
 prefix_list="$prefix_list $DMROOT.IPPingDiagnostics."
 entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_IPPingDiagnostics"
 
-UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
-UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set"
 
 entry_execute_method_root_IPPingDiagnostics() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.IPPingDiagnostics."*)
@@ -25,6 +25,8 @@ entry_execute_method_root_IPPingDiagnostics() {
 		common_execute_method_param "$DMROOT.IPPingDiagnostics.AverageResponseTime" "0" "ipping_get easycwmp.@local[0].AverageResponseTime 0" "" "xsd:unsignedInt"
 		common_execute_method_param "$DMROOT.IPPingDiagnostics.MinimumResponseTime" "0" "ipping_get easycwmp.@local[0].MinimumResponseTime 0" "" "xsd:unsignedInt"
 		common_execute_method_param "$DMROOT.IPPingDiagnostics.MaximumResponseTime" "0" "ipping_get easycwmp.@local[0].MaximumResponseTime 0" "" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.IPPingDiagnostics.DSCP" "1" "ipping_get easycwmp.@local[0].DSCP 0" "ipping_set easycwmp.@local[0].DSCP"
+		common_execute_method_param "$DMROOT.IPPingDiagnostics.Interface" "1" "ipping_get easycwmp.@local[0].Interface 0" "ipping_set easycwmp.@local[0].Interface"
 		return 0;
 		;;
 	esac
@@ -68,7 +70,8 @@ ipping_set_diagnostic_state() {
 		Requested)
 			ipping_stop_diagnostic
 			$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=Requested
-			common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/ipping_launch run &"
+			#common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/ipping_launch run &"
+			/usr/share/easycwmp/functions/ipping_launch run&
 			return 0
 		;;
 	esac
