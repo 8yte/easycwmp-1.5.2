@@ -1,0 +1,54 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+[ "$1" != "run" ] && return
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set"
+
+ipping_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+traceroute_launch() {
+	local i res par      
+	[ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState1`" != "Requested" ] && return
+	local host=`ipping_get easycwmp.@local[0].Host1`
+	local cnt=`ipping_get easycwmp.@local[0].NumberOfTries1 3`
+	local dsize=`ipping_get easycwmp.@local[0].DataBlockSize1 64`
+	local timeout=`ipping_get easycwmp.@local[0].Timeout1 5000`
+	local hops=`ipping_get easycwmp.@local[0].Hops1 3`
+	echo $host >> /tmp/debug.txt
+	[ "$host" = "" ] && return
+	timeout=$((timeout/1000))
+	[ "$timeout" = "0" ] && timeout = "1"
+	i=0
+
+	traceroute -q $cnt -w $timeout -m $hops $host $dsize 2>&1 > /tmp/traceroute
+	sed -i '1d' /tmp/traceroute
+	
+	while [ $i -lt $hops ]; do
+		let i++
+		par=`sed -n ''$i'p' /tmp/traceroute | awk '{print $2}'`
+		$UCI_SET_VARSTATE easycwmp.@local[0].hophost$i=$par
+		par=`sed -n ''$i'p' /tmp/traceroute | awk '{print $3}' | cut -d '(' -f2|cut -d ')' -f1`
+		$UCI_SET_VARSTATE easycwmp.@local[0].hophostaddr$i=$par
+		par=0
+		$UCI_SET_VARSTATE easycwmp.@local[0].hoperrorcode$i=$par
+		par=`sed -n ''$i'p' /tmp/traceroute | awk '{print $4}'`
+		$UCI_SET_VARSTATE easycwmp.@local[0].hoprrttimes$i=$par
+	done
+	
+	$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState1=Complete
+	sync
+	event_dignostic
+}
+
+event_dignostic() {
+	/usr/bin/killall -s USR1 easycwmpd
+	ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
+}
+
+traceroute_launch

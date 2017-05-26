@@ -1,0 +1,110 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.TraceRouteDiagnostics."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_TracerouteDiagnostics"
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set"
+
+entry_execute_method_root_TracerouteDiagnostics() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.TraceRouteDiagnostics."*)
+		common_execute_method_obj "$DMROOT.TraceRouteDiagnostics." "0"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.DiagnosticsState" "1" "traceroute_get easycwmp.@local[0].DiagnosticsState1 None" "traceroute_set_diagnostic_state"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.Host" "1" "traceroute_get easycwmp.@local[0].Host1" "traceroute_set easycwmp.@local[0].Host1"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.MaxHopCount" "1" "traceroute_get easycwmp.@local[0].Hops1 3" "traceroute_set easycwmp.@local[0].Hops1" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.NumberOfTries" "1" "traceroute_get easycwmp.@local[0].NumberOfTries1 3" "traceroute_set_number easycwmp.@local[0].NumberOfTries1" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.Timeout" "1" "traceroute_get easycwmp.@local[0].Timeout1 1000" "traceroute_set_number easycwmp.@local[0].Timeout1" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.DataBlockSize" "1" "traceroute_get easycwmp.@local[0].DataBlockSize1 64" "traceroute_set_number easycwmp.@local[0].DataBlockSize1" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.DSCP" "1" "traceroute_get easycwmp.@local[0].DSCP1 0" "ipping_set easycwmp.@local[0].DSCP1"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.Interface" "1" "traceroute_get easycwmp.@local[0].Interface1 0" "traceroute_set easycwmp.@local[0].Interface1"
+		common_execute_method_obj "DMROOT.TraceRouteDiagnostics.RouteHops." "0" "" "" "traceroute_browse_instances_RouteHops $1"
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+traceroute_browse_instances_RouteHops(){
+	local hops=`ipping_get easycwmp.@local[0].Hops1 3`
+	local j=0
+	while [ $j -lt $hops ]; do
+		let j++
+		sub_entry_traceroute_RouteHops "$1" "$j" "1"
+	done
+	return 0
+}
+
+sub_entry_traceroute_RouteHops(){
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.TraceRouteDiagnostics.RouteHops.$j" && {
+		common_execute_method_obj "$DMROOT.TraceRouteDiagnostics.RouteHops.$j" "0"
+		common_execute_method_obj "$DMROOT.TraceRouteDiagnostics.RouteHops.$j." "0"
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.RouteHops.$j.HopHost" "0" "traceroute_get easycwmp.@local[0].hophost$j hostname" 
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.RouteHops.$j.HopHostAddress" "0" "traceroute_get easycwmp.@local[0].hophostaddr$j 0.0.0.0" 
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.RouteHops.$j.HopErrorCode" "0" "traceroute_get easycwmp.@local[0].hoperrorcode$j 0" 
+		common_execute_method_param "$DMROOT.TraceRouteDiagnostics.RouteHops.$j.HopRTTimes" "0" "traceroute_get easycwmp.@local[0].hoprrttimes$j 0.5" 
+		return 0 
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+#######################################
+#   Data model parameters functions   #
+#######################################
+
+traceroute_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+traceroute_set() {
+	traceroute_stop_diagnostic
+	if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState1`" != "Requested" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+	$UCI_SET_VARSTATE $1=$2
+	return 0
+}
+
+traceroute_set_number() {
+	case $2 in
+		(*[^0-9]*|'') return $E_INVALID_PARAMETER_VALUE;;
+	esac
+	[ $2 -lt 1 ] && return $E_INVALID_PARAMETER_VALUE
+	traceroute_stop_diagnostic
+	if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState1`" != "Requested" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+	$UCI_SET_VARSTATE $1=$2
+	return 0
+}
+
+traceroute_set_diagnostic_state() {
+	local val="$1"
+	case $val in 
+		Requested)
+			traceroute_stop_diagnostic
+			$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState1=Requested
+			/usr/share/easycwmp/functions/traceroute_launch run&
+			return 0
+		;;
+	esac
+	return $E_INVALID_PARAMETER_VALUE;
+}
+
+traceroute_stop_diagnostic() {
+	local pids=`ps aux | grep traceroute_launch | grep -v grep | awk '{print $2}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState1=None
+	fi
+}
+
+
