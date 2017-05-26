@@ -67,16 +67,8 @@ ipping_launch() {
 }
 
 event_dignostic() {
-	local e=1
-	local i=0
 	/usr/bin/killall -s USR1 easycwmpd
-	return 0
-	while [ "$e" != 0 -a $i -lt 200 ]; do	
-		ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
-		e=$?
-		[ "$e" != "0" ] && sleep 1;
-		let i++
-	done
+	ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
 }
 
 ipping_launch
