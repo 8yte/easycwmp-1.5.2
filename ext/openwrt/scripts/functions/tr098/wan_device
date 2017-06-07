@@ -21,6 +21,12 @@ entry_execute_method_root_WANDevice() {
 	esac
 	return $E_INVALID_PARAMETER_NAME;
 }
+# InternetGatewayDevice.WANDevice.1.WANCommonInterfaceConfig.WANAccessType
+# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.SubnetMask
+# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DefaultGateway
+# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.AddressingType
+# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DNSServers
+
 
 sub_entry_wandevice_wanconnectiondevice() {
 	local j="$2"
@@ -36,6 +42,12 @@ sub_entry_wandevice_wanconnectiondevice() {
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionStatus" "0" "wan_device_get_ipcx_status"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ExternalIPAddress" "0" "wan_device_get_ipcx_ipaddr $iface" "" "" "$default"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MACAddress" "0" "wan_device_get_ipcx_macaddr $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.SubnetMask" "0" "get_wan_device_mng_interface_mask"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DefaultGateway" "0" "get_wan_device_mng_interface_gateway"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.AddressingType" "0" "get_wan_device_mng_interface_addresstype"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSServers" "0" "get_wan_device_mng_interface_dns"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MTUSize" "0" "get_wan_device_mng_interface_mtu"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.PPTP" "1" "get_wan_device_mng_interface_pptp" "set_wan_device_mng_interface_pptp"
 			;;
 			PPP)
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection." "0"
@@ -75,10 +87,12 @@ wan_device_browse_instances_wancxdev() {
 wan_device_get_interface_maps() {
 	#should return a list like this: "<interface1>:<instance1>:<protocol>:<default interface? 1 : 0> <interface2>:<instance>:<protocol>:<default interface? 1 : 0>"
 	echo "mng:1:IP:1 wan:2:PPP:0"
+	return 0
 }
 
 wan_device_get_ipcx_status() {
 	echo "Connected"
+	return 0
 }
 
 wan_device_get_ipcx_ipaddr() {
@@ -95,12 +109,14 @@ wan_device_get_ipcx_macaddr() {
 		val=$default_wan_device_mng_interface_mac
 	fi
 	echo $val
+	return 0
 }
 
 wan_device_get_wan_ppp_enable() {
 	local iface="$1"
 	local val=`$UCI_GET network.$iface.auto`
 	echo ${val:-1}
+	return 0
 }
 
 wan_device_set_wan_ppp_enable() {
