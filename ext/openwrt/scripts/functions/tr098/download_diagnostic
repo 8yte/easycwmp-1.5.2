@@ -1,0 +1,98 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: Michael.wu
+#
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.DownloadDiagnostics."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_DownloadDiagnostics"
+
+UCI_GET_VARSTATE="/sbin/uci get"
+UCI_SET_VARSTATE="/sbin/uci set"
+
+entry_execute_method_root_DownloadDiagnostics() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.DownloadDiagnostics."*)
+		common_execute_method_obj "$DMROOT.DownloadDiagnostics." "0"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.DiagnosticsState" "1" "download_get_DiagnosticsState" "download_set_diagnostic_state"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.Interface" "1" "download_get easycwmp.@local[0].Interface" "download_set easycwmp.@local[0].Interface"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.DownloadURL" "1" "download_get easycwmp.@local[0].DownloadURL" "download_set easycwmp.@local[0].DownloadURL"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.DSCP" "1" "download_get easycwmp.@local[0].DSCP 0" "download_set_number easycwmp.@local[0].DSCP" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.EthernetPriority" "1" "download_get easycwmp.@local[0].EthernetPriority 0" "download_set_number easycwmp.@local[0].EthernetPriority" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.ROMTime" "0" "download_get easycwmp.@local[0].ROMTime" ""  
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.BOMTime" "0" "download_get easycwmp.@local[0].BOMTime" ""  
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.EOMTime" "0" "download_get easycwmp.@local[0].EOMTime" ""  
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TestBytesReceived" "0" "download_get easycwmp.@local[0].TestBytesReceived 0" "" 
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TotalBytesReceived" "0" "download_get easycwmp.@local[0].TotalBytesReceived 0" ""  
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TCPOpenRequestTime" "0" "download_get easycwmp.@local[0].TCPOpenRequestTime 0" "" 
+		common_execute_method_param "$DMROOT.DownloadDiagnostics.TCPOpenResponseTime" "0" "download_get easycwmp.@local[0].TCPOpenResponseTime 0" ""  
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+#######################################
+#   Data model parameters functions   #
+#######################################
+download_get_DiagnosticsState()
+{
+     local val=`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`
+     echo $val
+}
+
+download_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+download_set() {
+	download_stop_diagnostic
+	if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`" != "Requested" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+	$UCI_SET_VARSTATE $1=$2
+	return 0
+}
+
+download_set_number() {
+	case $2 in
+		(*[^0-9]*|'') return $E_INVALID_PARAMETER_VALUE;;
+	esac
+	[ $2 -lt 1 ] && return $E_INVALID_PARAMETER_VALUE
+	download_stop_diagnostic
+	if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`" != "Requested" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+	$UCI_SET_VARSTATE $1=$2
+	return 0
+}
+
+download_set_diagnostic_state() {
+	local val="$1"
+         echo $val > /tmp/debug_download.txt
+	case $val in 
+		Requested)
+                        echo "download_stop_diagnostic">>/tmp/debug_download.txt
+			download_stop_diagnostic
+			$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=Requested
+                        echo `date`": DiagnosticsState = "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState` >> /tmp/debug_download.txt
+                        echo "apply">>/tmp/debug_download.txt
+                        echo `date`": DiagnosticsState = "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState` >> /tmp/debug_download.txt
+                        common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/download_launch run &"
+                       ### /usr/share/easycwmp/functions/download_launch run  > /dev/null 2>&1
+			return 0
+		;;
+	esac
+	return $E_INVALID_PARAMETER_VALUE;
+}
+
+download_stop_diagnostic() {
+	local pids=`ps www | grep httpdownload | grep -v grep | awk '{print $1}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+}
+
