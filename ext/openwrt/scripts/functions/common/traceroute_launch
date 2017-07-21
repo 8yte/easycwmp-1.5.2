@@ -4,8 +4,8 @@
 
 [ "$1" != "run" ] && return
 
-UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get"
-UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set"
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
 
 ipping_get() {
 	local val=`$UCI_GET_VARSTATE $1`
@@ -14,23 +14,26 @@ ipping_get() {
 
 traceroute_launch() {
 	local i res par      
+	echo "`date`: traceroute_launch">>/tmp/debug_traceroute.txt
+        echo "`date`: DiagnosticsState = `$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState1`" >> /tmp/debug_traceroute.txt
 	[ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState1`" != "Requested" ] && return
 	local host=`ipping_get easycwmp.@local[0].Host1`
 	local cnt=`ipping_get easycwmp.@local[0].NumberOfTries1 3`
 	local dsize=`ipping_get easycwmp.@local[0].DataBlockSize1 64`
 	local timeout=`ipping_get easycwmp.@local[0].Timeout1 5000`
 	local hops=`ipping_get easycwmp.@local[0].Hops1 3`
-	echo $host >> /tmp/debug.txt
 	[ "$host" = "" ] && return
 	timeout=$((timeout/1000))
 	[ "$timeout" = "0" ] && timeout = "1"
 	i=0
 
-	traceroute -q $cnt -w $timeout -m $hops $host $dsize 2>&1 > /tmp/traceroute
+	traceroute -q $cnt -w $timeout -m $hops $host $dsize  2>&1 > /tmp/traceroute
 	sed -i '1d' /tmp/traceroute
 	
+        echo "`date`: hops =$hops" >> /tmp/debug_traceroute.txt
 	while [ $i -lt $hops ]; do
 		let i++
+                echo "`date`: i =$i" >> /tmp/debug_traceroute.txt
 		par=`sed -n ''$i'p' /tmp/traceroute | awk '{print $2}'`
 		$UCI_SET_VARSTATE easycwmp.@local[0].hophost$i=$par
 		par=`sed -n ''$i'p' /tmp/traceroute | awk '{print $3}' | cut -d '(' -f2|cut -d ')' -f1`
@@ -41,14 +44,21 @@ traceroute_launch() {
 		$UCI_SET_VARSTATE easycwmp.@local[0].hoprrttimes$i=$par
 	done
 	
+        echo "`date`: set DiagnosticsState1 = Complete">>/tmp/debug_traceroute.txt
 	$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState1=Complete
 	sync
 	event_dignostic
 }
 
 event_dignostic() {
-	/usr/bin/killall -s USR1 easycwmpd
-	ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
+	local e=1
+	local i=0
+	while [ "$e" != 0 -a $i -lt 200 ]; do	
+		ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
+		e=$?
+		[ "$e" != "0" ] && sleep 1;
+		let i++
+	done
 }
 
 traceroute_launch
