@@ -9,8 +9,8 @@
 prefix_list="$prefix_list $DMROOT.DownloadDiagnostics."
 entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_DownloadDiagnostics"
 
-UCI_GET_VARSTATE="/sbin/uci get"
-UCI_SET_VARSTATE="/sbin/uci set"
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
 
 entry_execute_method_root_DownloadDiagnostics() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.DownloadDiagnostics."*)
@@ -71,15 +71,14 @@ download_set_number() {
 
 download_set_diagnostic_state() {
 	local val="$1"
-         echo $val > /tmp/debug_download.txt
+         echo "`date`: setting state value="$val > /tmp/debug_download.txt
 	case $val in 
 		Requested)
-                        echo "download_stop_diagnostic">>/tmp/debug_download.txt
+                        echo "`date`: download_stop_diagnostic">>/tmp/debug_download.txt
 			download_stop_diagnostic
 			$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=Requested
-                        echo `date`": DiagnosticsState = "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState` >> /tmp/debug_download.txt
-                        echo "apply">>/tmp/debug_download.txt
-                        echo `date`": DiagnosticsState = "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState` >> /tmp/debug_download.txt
+                        echo "`date`: DiagnosticsState = "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState` >> /tmp/debug_download.txt
+                        echo "`date`: common_execute_command_in_apply_service download_launch">>/tmp/debug_download.txt
                         common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/download_launch run &"
                        ### /usr/share/easycwmp/functions/download_launch run  > /dev/null 2>&1
 			return 0

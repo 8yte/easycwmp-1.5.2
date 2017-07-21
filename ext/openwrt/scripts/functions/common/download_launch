@@ -4,8 +4,8 @@
 
 [ "$1" != "run" ] && return
 
-UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get"
-UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set"
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
 
 download_get() {
 	local val=`$UCI_GET_VARSTATE $1`
@@ -13,28 +13,25 @@ download_get() {
 }
 
 download_launch() {
-	echo "download_launch">>/tmp/debug_download.txt
-        echo `date`": DiagnosticsState = "`/sbin/uci get easycwmp.@local[0].DiagnosticsState` >> /tmp/debug_download.txt
-	[ "`/sbin/uci get easycwmp.@local[0].DiagnosticsState`" != "Requested" ] && return
-	echo "Requested">>/tmp/debug_download.txt
+	echo "`date`: download_launch">>/tmp/debug_download.txt
+        echo "`date`: DiagnosticsState = `$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`" >> /tmp/debug_download.txt
+	[ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`" != "Requested" ] && return
 	local url=`download_get easycwmp.@local[0].DownloadURL`
 	local inter=`download_get easycwmp.@local[0].Interface`
-	echo url="$url ">>/tmp/debug_download.txt
+	echo "`date`: url =$url ">>/tmp/debug_download.txt
 	[ "$url" = "" ] && return
-	echo inter="$inter ">>/tmp/debug_download.txt
+	echo "`date`: inter =$inter ">>/tmp/debug_download.txt
 	[ "$inter" = "" ] && return
 	local flag=1
 	local  par
-	echo "sleep 1 ">>/tmp/debug_download.txt
-	sleep 1
+	echo "`date`: run httpdownload">>/tmp/debug_download.txt
 	httpdownload $url $inter  2>&1
-	echo "run httpdownload">>/tmp/debug_download.txt
 	while [ "$flag" != 0 ]; do	
-                echo `date`":flag = ""$flag">>/tmp/debug_download.txt
 		http_code=`cat  /tmp/httpdownload_state  | grep HTTPCode`
+                echo "`date`: $http_code">>/tmp/debug_download.txt
 		if [ "$http_code" = "" ]; then
 			flag=1
-			sleep 3
+			sleep 1
 		else
 			flag=0
 			par=`cat /tmp/httpdownload_state  | grep ROMTime | awk -F '=' '{print $2}'`
@@ -53,8 +50,7 @@ download_launch() {
 			$UCI_SET_VARSTATE easycwmp.@local[0].TCPOpenRequestTime=$par
 			par=`cat /tmp/httpdownload_state  | grep TCPOpenResponseTime | awk -F '=' '{print $2}'`
 			$UCI_SET_VARSTATE easycwmp.@local[0].TCPOpenResponseTime=$par
-                        echo `date`":flag = ""$flag">>/tmp/debug_download.txt
-                        echo `date`":uci set DiagnosticsState =Complete">>/tmp/debug_download.txt
+                        echo "`date`: set DiagnosticsState = Complete">>/tmp/debug_download.txt
                 	$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=Complete                
 		fi
     done	
