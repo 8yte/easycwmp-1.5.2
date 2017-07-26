@@ -1,0 +1,45 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.X_CT-COM_UserInfo."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_UserInfo"
+
+
+entry_execute_method_root_UserInfo() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_UserInfo."*)
+		common_execute_method_obj "$DMROOT.X_CT-COM_UserInfo." "0"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.UserName" "1" "$UCI_GET pon.pon.loid" "UserInfoset pon.pon.loid"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.UserId" "1" "$UCI_GET pon.pon.loidpwd" "UserInfoset pon.pon.loidpwd"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.Status" "1" "$UCI_GET pon.auth.status" "UserInfoset_number pon.auth.status" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.Limit" "1" "$UCI_GET pon.auth.limit" "UserInfoset_number pon.auth.limit" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.Times" "1" "$UCI_GET pon.auth.times" "UserInfoset_number pon.auth.times" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.Result" "1" "$UCI_GET pon.auth.result" "UserInfoset_number pon.auth.result"  "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_UserInfo.ProvisioningCode" "0" "$UCI_GET pon.pon.dev_type" "UserInfoset pon.pon.dev_type" 
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+UserInfoset() {
+	local cfg=$1
+	local val=$2
+	$UCI_SET $cfg="$val"
+	return 0
+}
+
+UserInfoset_number() {
+	case $2 in
+		(*[^0-9]*|'') return $E_INVALID_PARAMETER_VALUE;;
+	esac
+	[ $2 -lt 0 ] && return $E_INVALID_PARAMETER_VALUE
+
+	$UCI_SET $1=$2
+	return 0
+}
+
