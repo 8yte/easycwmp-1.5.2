@@ -1,0 +1,180 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.Layer3Forwarding."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_Layer3Forwarding"
+
+entry_execute_method_root_Layer3Forwarding() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.Layer3Forwarding."*)
+		common_execute_method_obj "$DMROOT.Layer3Forwarding." "0"
+		common_execute_method_param "$DMROOT.Layer3Forwarding.DefaultConnectionService" "1" "GetDefaultConnectionService" "SetDefaultConnectionService"
+		common_execute_method_param "$DMROOT.Layer3Forwarding.ForwardNumberOfEntries" "1" "GetForwardNumberOfEntries" ""
+		common_execute_method_obj  "$DMROOT.Layer3Forwarding.Forwarding." "0" "" "" "Layer3Forwarding_browse_instances_Forwarding $1"
+		return 0
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+
+GetDefaultConnectionService()
+{
+    echo "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection."
+    return 0
+}
+
+SetDefaultConnectionService()
+{
+    return 0
+}
+
+GetForwardNumberOfEntries()
+{
+    let num=`route -n | wc -l`-2
+    echo  $num
+}
+
+Layer3Forwarding_browse_instances_Forwarding(){
+	let num=`route -n | wc -l`-2
+	local j=0
+	while [ $j -lt $num ]; do
+		let j++
+		sub_entry_Layer3Forwarding_Forwarding "$1" "$j" "1"
+	done
+	return 0
+}
+
+sub_entry_Layer3Forwarding_Forwarding(){
+	local j="$2"
+	local iface="$3"
+	case_param "$1" belongto "$DMROOT.Layer3Forwarding.Forwarding.$j" && {
+		common_execute_method_obj "$DMROOT.Layer3Forwarding.Forwarding.$j" "0"
+		common_execute_method_obj "$DMROOT.Layer3Forwarding.Forwarding.$j." "0"
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.Enable" "1" "GetForwardingEnable" ""
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.Status" "0" "GetForwardingStatus" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.StaticRoute" "0" "GetForwardingStaticRoute" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.Type" "1" "GetForwardingType $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.DestIPAddress" "1" "GetForwardingDestIPAddress $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.DestSubnetMask" "1" "GetForwardingDestSubnetMask $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.SourceIPAddress" "1" "GetForwardingSourceIPAddress $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.SourceSubnetMask" "1" "GetForwardingSourceSubnetMask $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.GatewayIPAddress" "1" "GetForwardingGatewayIPAddress $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.Interface" "1" "GetForwardingInterface $j" 
+		common_execute_method_param "$DMROOT.Layer3Forwarding.Forwarding.$j.ForwardingMetric" "1" "GetForwardingForwardingMetric $j" 
+		return 0 
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+GetForwardingEnable()
+{
+    echo "1"
+    return 0
+}
+
+GetForwardingStatus()
+{
+    echo "Enabled"
+    return 0
+}
+
+GetForwardingStaticRoute()
+{
+    echo "1"
+    return 0    
+}
+
+GetForwardingType()
+{   
+    let index=$1
+    ip route>/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    echo $line>/tmp/test.txt
+    result=$(echo $line | grep "default")
+
+   if [[ "$result" != "" ]]
+   then
+       echo "Default"
+   else
+      result=$(echo $line | grep "255.255.255.255")
+      if [[ "$result" != "" ]]
+      then
+          echo "Host"
+      else
+          echo "Network"
+      fi
+   fi
+    
+    return 0
+}
+
+GetForwardingDestIPAddress()
+{
+    let index=$1+2
+    route -n>/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    echo `echo $line | awk -F ' ' '{print $1}'`
+    return 0
+}
+
+GetForwardingDestSubnetMask()
+{
+    let index=$1+2
+    route -n>/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    echo `echo $line | awk -F ' ' '{print $3}'`
+    return 0
+}
+
+GetForwardingSourceIPAddress()
+{
+    let index=$1
+    ip route >/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    result=$(echo $line | grep "src")
+    if [[ "$result" != "" ]]
+    then
+        echo `echo $line | awk -F ' src' '{print $2}'`
+    else
+        echo "0.0.0.0"
+    fi
+    return 0
+}
+
+GetForwardingSourceSubnetMask()
+{
+    echo "0.0.0.0"
+    return 0
+}
+
+GetForwardingGatewayIPAddress()
+{
+    let index=$1+2
+    route -n>/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    echo `echo $line | awk -F ' ' '{print $2}'`
+    return 0
+}
+
+GetForwardingInterface()
+{
+    let index=$1+2
+    route -n>/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    echo `echo $line | awk -F ' ' '{print $8}'`
+    return 0
+}
+
+GetForwardingForwardingMetric()
+{
+    let index=$1+2
+    route -n>/tmp/static_tab.txt
+    local line=`awk "NR==${index}{print}" /tmp/static_tab.txt`
+    echo `echo $line | awk -F ' ' '{print $5}'`
+    return 0
+}
