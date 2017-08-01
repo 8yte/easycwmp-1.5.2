@@ -1,0 +1,66 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.X_CT-COM_PPPOE_EMULATOR."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_pppoe_emulator"
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+entry_execute_method_root_pppoe_emulator() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_PPPOE_EMULATOR."*)
+		common_execute_method_obj "$DMROOT.X_CT-COM_PPPOE_EMULATOR." "0"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.DiagnosticsState" "1" "$UCI_GET ppp_diagnose.route.state" "ppp_diagnose_start"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Username" "1" "$UCI_GET ppp_diagnose.route.username" "$UCI_SET ppp_diagnose.route.username"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Password" "1" "$UCI_GET ppp_diagnose.route.password" "$UCI_SET ppp_diagnose.route.password"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.WANInterface" "1" "$UCI_GET ppp_diagnose.route.wan" "$UCI_SET ppp_diagnose.route.wan"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.PPPAuthenticationProtocol" "1" "$UCI_GET ppp_diagnose.route.auth_protocol" "$UCI_SET ppp_diagnose.route.auth_protocol"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.RetryTimes" "1" "$UCI_GET ppp_diagnose.route.rertry_times" "$UCI_SET ppp_diagnose.route.rertry_times"
+
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Result" "1" "ppp_diagnose_get_result" 
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.ErrorCode" "1" "$UCI_GET  /var/state/ppp_diagnose_state.wan.errcode" 
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.PPPSessionID" "1" "$UCI_GET  /var/state/ppp_diagnose_state.wan.sid"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.ExternalIPAddress" "1" "$UCI_GET  /var/state/ppp_diagnose_state.wan.addr" 
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.DefaultGateway" "1" "$UCI_GET  /var/state/ppp_diagnose_state.wan.gw" 
+
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+ppp_diagnose_start()
+{
+    local val=$1
+    if [ "$val" != "Start" ]; then
+        return $E_INVALID_PARAMETER_VALUE 
+    fi    
+    $UCI_SET ppp_diagnose.route.state=$val
+    ppp_diagnose diagnose route
+    return 0
+}
+
+ppp_diagnose_get_result()
+{
+    local var_res=`$UCI_GET  /var/state/ppp_diagnose_state.wan.result`
+    if [ "$var_res" == "0" ]; then
+        echo "Success" 
+    elif [ "$var_res" == "1" ]; then
+        echo "ParamNegoFail"
+    elif [ "$var_res" == "2" ]; then
+        echo "UserAuthenticationFail"
+    elif [ "$var_res" == "3" ]; then
+        echo "Timeout"
+    elif [ "$var_res" == "4" ]; then
+        echo "UserStop"
+    elif [ "$var_res" == "5" ]; then
+        echo "Unknown"
+    fi   
+}
+
+
