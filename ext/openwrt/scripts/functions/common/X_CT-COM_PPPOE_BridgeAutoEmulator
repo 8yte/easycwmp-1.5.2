@@ -1,0 +1,47 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_pppoe_bridge_emulator"
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+entry_execute_method_root_pppoe_bridge_emulator() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator."*)
+		common_execute_method_obj "$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator." "0"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator.Enable" "1" "$UCI_GET ppp_diagnose.bridge.enable " "ppp_bridge_diagnose_start"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator.Username" "1" "$UCI_GET ppp_diagnose.bridge.username" "ppp_bridge_set ppp_diagnose.bridge.username"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator.Password" "1" "$UCI_GET ppp_diagnose.bridge.password" "ppp_bridge_set ppp_diagnose.bridge.password"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator.TimeList" "1" "$UCI_GET ppp_diagnose.bridge.btime" "ppp_bridge_set ppp_diagnose.bridge.btime"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_BridgeAutoEmulator.FailRetryTimeList" "1" "$UCI_GET ppp_diagnose.bridge.rtime" "ppp_bridge_set ppp_diagnose.bridge.rtime"
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+ppp_bridge_diagnose_start()
+{
+    local val=$1
+    if [ "$val" != "1" ]; then
+        return $E_INVALID_PARAMETER_VALUE 
+    fi    
+    $UCI_SET ppp_diagnose.route.state=$val
+    ppp_diagnose diagnose bridge
+    ppp_diagnose config boot
+    return 0
+}
+
+ppp_bridge_set() {
+	local cfg=$1
+	local val=$2
+	$UCI_SET $cfg="$val"
+	return 0
+}
+
