@@ -16,11 +16,11 @@ entry_execute_method_root_pppoe_emulator() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_PPPOE_EMULATOR."*)
 		common_execute_method_obj "$DMROOT.X_CT-COM_PPPOE_EMULATOR." "0"
 		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.DiagnosticsState" "1" "$UCI_GET ppp_diagnose.route.state" "ppp_diagnose_start"
-		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Username" "1" "$UCI_GET ppp_diagnose.route.username" "$UCI_SET ppp_diagnose.route.username"
-		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Password" "1" "$UCI_GET ppp_diagnose.route.password" "$UCI_SET ppp_diagnose.route.password"
-		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.WANInterface" "1" "$UCI_GET ppp_diagnose.route.wan" "$UCI_SET ppp_diagnose.route.wan"
-		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.PPPAuthenticationProtocol" "1" "$UCI_GET ppp_diagnose.route.auth_protocol" "$UCI_SET ppp_diagnose.route.auth_protocol"
-		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.RetryTimes" "1" "$UCI_GET ppp_diagnose.route.rertry_times" "$UCI_SET ppp_diagnose.route.rertry_times"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Username" "1" "$UCI_GET ppp_diagnose.route.username" "ppp_diagnose_set ppp_diagnose.route.username"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Password" "1" "$UCI_GET ppp_diagnose.route.password" "ppp_diagnose_set ppp_diagnose.route.password"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.WANInterface" "1" "$UCI_GET ppp_diagnose.route.wan" "ppp_diagnose_set ppp_diagnose.route.wan"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.PPPAuthenticationProtocol" "1" "$UCI_GET ppp_diagnose.route.auth_protocol" "ppp_diagnose_set ppp_diagnose.route.auth_protocol"
+		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.RetryTimes" "1" "$UCI_GET ppp_diagnose.route.rertry_times" "ppp_diagnose_set ppp_diagnose.route.rertry_times"
 
 		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.Result" "1" "ppp_diagnose_get_result" 
 		common_execute_method_param "$DMROOT.X_CT-COM_PPPOE_EMULATOR.ErrorCode" "1" "$UCI_GET  /var/state/ppp_diagnose_state.wan.errcode" 
@@ -63,4 +63,10 @@ ppp_diagnose_get_result()
     fi   
 }
 
-
+ppp_diagnose_set()
+{
+	local cfg=$1
+	local val=$2
+	$UCI_SET $cfg="$val"
+	return 0
+}
