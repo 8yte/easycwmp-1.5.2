@@ -2,6 +2,8 @@
 # Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
 # 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
 
+. /lib//functions/network.sh
+
 #############################
 #   Entry point functuons   #
 #############################
@@ -15,18 +17,12 @@ entry_execute_method_root_WANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.WANDevice."*)
 		common_execute_method_obj "$DMROOT.WANDevice." "0"
 		common_execute_method_obj "$DMROOT.WANDevice.1." "0"
-		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice." "0" "" "" "wan_device_browse_instances_wancxdev $1"
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice." "1" "wan_device_add_instances_wancxdev $1" "" "wan_device_browse_instances_wancxdev $1"
 		return 0
 		;;
 	esac
 	return $E_INVALID_PARAMETER_NAME;
 }
-# InternetGatewayDevice.WANDevice.1.WANCommonInterfaceConfig.WANAccessType
-# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.SubnetMask
-# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DefaultGateway
-# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.AddressingType
-# InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DNSServers
-
 
 sub_entry_wandevice_wanconnectiondevice() {
 	local j="$2"
@@ -34,32 +30,132 @@ sub_entry_wandevice_wanconnectiondevice() {
 	local protocol="$4"
 	local default="$5"
 	case_param "$1" belongto "$DMROOT.WANDevice.1.WANConnectionDevice.$j." && {
-		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j." "0"
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j." "1"
 		case $protocol in
 			IP)
-			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection." "0"
+			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection." "1"
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1." "0"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionStatus" "0" "wan_device_get_ipcx_status"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionStatus" "0" "wan_device_get_ipcx_status $iface"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ExternalIPAddress" "0" "wan_device_get_ipcx_ipaddr $iface" "" "" "$default"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MACAddress" "0" "wan_device_get_ipcx_macaddr $iface"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.SubnetMask" "0" "get_wan_device_mng_interface_mask"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DefaultGateway" "0" "get_wan_device_mng_interface_gateway"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.AddressingType" "0" "get_wan_device_mng_interface_addresstype"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSServers" "0" "get_wan_device_mng_interface_dns"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MTUSize" "0" "get_wan_device_mng_interface_mtu"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.PPTP" "1" "get_wan_device_mng_interface_pptp" "set_wan_device_mng_interface_pptp"
 			;;
 			PPP)
-			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection." "0"
+			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection." "1"
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection.1." "0"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection.1.Enable" "1" "wan_device_get_ipcx_macaddr $iface" "wan_device_set_wan_ppp_enable $iface" "xsd:boolean"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection.1.Enable" "1" "wan_device_get_wan_ppp_enable $iface" "wan_device_set_wan_ppp_enable $iface" "xsd:boolean"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection.1.Username" "1" "$UCI_GET network.$iface.username" "wan_device_set_wan_ppp_cfg network.$iface.username"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection.1.Password" "1" "" "wan_device_set_wan_ppp_cfg network.$iface.password"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection.1.Password" "1" "$UCI_GET network.$iface.password" "wan_device_set_wan_ppp_cfg network.$iface.password"
 			;;
 		esac
 		return 0
 	}
 	return $E_INVALID_PARAMETER_NAME;
+}
+
+
+wan_device_get_max_instances() {
+echo "`date` : wan_device_get_max_instances debug :start" >/tmp/test.txt
+
+wan_index=0
+subwan_index=0
+instances=0
+local wan_iface=""
+while [ $wan_index -le 2 ]
+do
+        echo "`date` : wan_index = $wan_index" >>/tmp/test.txt
+        if [ $wan_index = 0 ];then
+          wan_iface="wan"
+        else
+           wan_iface="wan$wan_index"
+        fi
+        echo "`date` : wan_iface = $wan_iface" >>/tmp/test.txt
+        wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
+        echo "`date` : wan_proto = $wan_proto" >>/tmp/test.txt
+
+        if [ "$wan_proto" != "" ]; then
+        {
+             instances=$(($instances+1))
+        }
+        fi
+        wan_index=$(($wan_index+1))
+        echo "`date` : instances = $instances" >>/tmp/test.txt
+done
+
+##subwan interface                     
+while [ $subwan_index -le 7 ]   
+do                                                                          
+        echo "`date` : subwan_index = $subwan_index" >>/tmp/test.txt
+        if [ $subwan_index = 0 ];then                                         
+          wan_iface="subwan"                                                
+        else                                                                
+           wan_iface="subwan$subwan_index"         
+        fi                             
+        echo "`date` : wan_iface = $wan_iface" >>/tmp/test.txt
+        wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
+        echo "`date` : wan_proto = $wan_proto" >>/tmp/test.txt
+
+        if [ "$wan_proto" != "" ]; then
+        {                  
+             instances=$(($instances+1))
+        }      
+        fi
+        subwan_index=$(($subwan_index+1))
+        echo "`date` : instances = $instances" >>/tmp/test.txt
+done      
+    echo "`date` : instances = $instances" >>/tmp/test.txt
+    echo  ${instances:-0}
+}
+
+#######################################
+#     Data model add  instances     #
+#######################################
+
+wan_device_add_instances_wancxdev() {
+    local cur_instances=`wan_device_get_max_instances`
+    local max_instances=7
+    subwan_index=0
+
+    if [ $((++cur_instances))  -ge $max_instances];then                                         
+        exit 0
+    fi                             
+
+    ##subwan interface                     
+    while [ $subwan_index -le $max_instances ]   
+    do                                                                          
+            if [ $subwan_index = 0 ];then                                         
+              wan_iface="subwan"                                                
+            else                                                                
+               wan_iface="subwan$subwan_index"         
+            fi                             
+            wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
+
+            if [ "$wan_proto" == "" ]; then
+            {                  
+                ############ add subwan  #####################
+                if [ $subwan_index = 0 ];then                                         
+                     uci set network.subwan="interface"
+                     uci set network.subwan.ifname="subwan"
+                     uci set network.subwan.proto="dhcp"
+                     uci set network.subwan.site="wan"
+       		     uci commit network
+                else                                                                
+                     uci set network.$wan_iface="interface"
+                     uci set network.$wan_iface.ifname="subwan$subwan_index"
+                     uci set network.$wan_iface.proto="dhcp"
+                     uci set network.$wan_iface.site="wan"
+       		     uci commit network
+                fi                             
+                break
+            }      
+            fi
+            subwan_index=$(($subwan_index+1))
+    done
+
+    if [ $((++cur_instances))  -le $max_instances];then                                         
+        echo $((++cur_instances))              
+    else                                                                
+        echo $max_instances
+    fi                             
 }
 
 #######################################
@@ -86,51 +182,157 @@ wan_device_browse_instances_wancxdev() {
 
 wan_device_get_interface_maps() {
 	#should return a list like this: "<interface1>:<instance1>:<protocol>:<default interface? 1 : 0> <interface2>:<instance>:<protocol>:<default interface? 1 : 0>"
-	echo "mng:1:IP:1 wan:2:PPP:0"
-	return 0
+wan_num=0
+subwan_num=0
+all_subwan=8
+local wan_proto=""
+local wanstring_last=""
+local wanstring=""
+local subwanstring_last=""
+local subwanstring=""
+local wan_iface=""
+i=0
+j=0
+while [ $wan_num -le 2 ]
+do
+
+        if [ $wan_num = 0 ];then
+          wan_iface="wan"
+        else
+          wan_iface="wan$wan_num"
+        fi
+        wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
+        [ -z $wan_proto ] &&
+        {
+             wan_num=$(($wan_num+1))
+             continue
+        }||
+        {
+                i=$(($i+1))
+                [ "$wan_proto" = "pppoe" ] &&
+                {
+                        wan_proto="PPP"
+                } || {
+                wan_proto="IP"
+                }
+
+                wanstring=$(echo $wanstring_last $wan_iface:$i:$wan_proto:0)
+                        wanstring_last=$wanstring
+                wan_num=$(($wan_num+1))
+         }
+done
+	  echo $wanstring > /tmp/michael1
+##subwan interface                     
+while [ $subwan_num -le 7 ]   
+do                                                                          
+        if [ $subwan_num = 0 ];then                                         
+          wan_iface="subwan"                                                
+        else                                                                
+           wan_iface="subwan$subwan_num"         
+        fi                             
+        wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
+        [ -z $wan_proto ] &&
+        {                  
+             subwan_num=$(($subwan_num+1))
+	     all_subwan=$(($all_subwan-1))
+             continue              
+        }||                        
+        {                               
+                i=$(($i+1))             
+                 [ "$wan_proto" = "pppoe" ] &&                    
+                {                                                 
+                        wan_proto="PPP"                           
+                } || {                                            
+                wan_proto="IP"            
+                }                         
+                                          
+                 subwanstring=$(echo $wanstring $subwanstring_last $wan_iface:$i:$wan_proto:0)
+                        subwanstring_last=$subwanstring
+                subwan_num=$(($subwan_num+1)) 
+        }                                     
+done                                          
+	  echo $subwanstring > /tmp/michael     
+	if [ $all_subwan = "0" ];then
+	 subwanstring=$wanstring
+	fi
+         echo $subwanstring            
 }
 
 wan_device_get_ipcx_status() {
-	echo "Connected"
-	return 0
+        local val iface="$1"
+        local up=$(uci -p /var/state get network.$iface.up)
+	[ -z $up ] || 
+	{
+		[ $up = "1" ] && {
+		echo "Connected"
+		} || {
+		echo "Disconnected"  
+		}
+	}
 }
 
 wan_device_get_ipcx_ipaddr() {
 	local val iface="$1"
-	network_get_ipaddr val "$iface"
+	
+	network_get_ipaddr val $iface
 	echo "$val"
 }
 
 wan_device_get_ipcx_macaddr() {
-	local val iface="$1"
-	if [ -z "$default_wan_device_mng_interface_mac" ]; then
-		val=`$UCI_GET network.$iface.macaddr`
-	else
-		val=$default_wan_device_mng_interface_mac
-	fi
-	echo $val
-	return 0
+        local val iface="$1"
+        local type
+        val=$(uci get network.$iface.macaddr)
+        if [ -z "$val" ]; then
+            type=$(uci get network.$iface.type)
+            if [ -z $type ];then
+              iface=$(uci get network.$iface.ifname)
+            else
+            {
+                [ $type = "bridge" ] &&
+                {
+                     iface=br-$iface
+                }
+            }
+            fi
+            [ -z $iface ] ||
+            val=$(ifconfig $iface |grep HWaddr |awk '{print $5;}')
+         fi
+
+        echo $val	
 }
 
 wan_device_get_wan_ppp_enable() {
 	local iface="$1"
 	local val=`$UCI_GET network.$iface.auto`
 	echo ${val:-1}
-	return 0
 }
 
 wan_device_set_wan_ppp_enable() {
-	local iface="$1"
-	local val="$2"
-	common_set_bool "network.$iface.auto" "$val" "1" "0"
-	local e="$?"
-	[ "$e" != "0" ] && return $e
+        local iface="$1"
+        local val="$2"
+        local up
+        local pid=$(ps www|grep pppd |grep $iface | awk '{print$1}')
+        [ $val = "1" ] && {
+	   $UCI_SET network.$iface.auto=1
+          up=$(uci -p /var/state get network.$iface.up)
+          if [ -z $up ];then
+             /sbin/ifup $iface 2&>/dev/null
+          elif [ $up = "0" ];then
+                 /sbin/ifup $iface 2&>/dev/null
+          fi
+        } ||
+        {
+           /sbin/ifdown $iface 2&>/dev/null
+	   $UCI_SET network.$iface.auto=0
+        }
+
 	return 0
 }
 
 wan_device_set_wan_ppp_cfg() {
 	local cfg="$1"
 	local val="$2"
-	$UCI_SET $cfg="$val"
+	uci set $cfg=$val
+	uci commit network
 	return 0
 }
