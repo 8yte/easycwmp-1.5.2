@@ -54,23 +54,18 @@ sub_entry_wandevice_wanconnectiondevice() {
 
 
 wan_device_get_max_instances() {
-echo "`date` : wan_device_get_max_instances debug :start" >/tmp/test.txt
-
 wan_index=0
 subwan_index=0
 instances=0
 local wan_iface=""
 while [ $wan_index -le 2 ]
 do
-        echo "`date` : wan_index = $wan_index" >>/tmp/test.txt
         if [ $wan_index = 0 ];then
           wan_iface="wan"
         else
            wan_iface="wan$wan_index"
         fi
-        echo "`date` : wan_iface = $wan_iface" >>/tmp/test.txt
         wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
-        echo "`date` : wan_proto = $wan_proto" >>/tmp/test.txt
 
         if [ "$wan_proto" != "" ]; then
         {
@@ -78,21 +73,17 @@ do
         }
         fi
         wan_index=$(($wan_index+1))
-        echo "`date` : instances = $instances" >>/tmp/test.txt
 done
 
 ##subwan interface                     
 while [ $subwan_index -le 7 ]   
 do                                                                          
-        echo "`date` : subwan_index = $subwan_index" >>/tmp/test.txt
         if [ $subwan_index = 0 ];then                                         
           wan_iface="subwan"                                                
         else                                                                
            wan_iface="subwan$subwan_index"         
         fi                             
-        echo "`date` : wan_iface = $wan_iface" >>/tmp/test.txt
         wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
-        echo "`date` : wan_proto = $wan_proto" >>/tmp/test.txt
 
         if [ "$wan_proto" != "" ]; then
         {                  
@@ -100,9 +91,7 @@ do
         }      
         fi
         subwan_index=$(($subwan_index+1))
-        echo "`date` : instances = $instances" >>/tmp/test.txt
 done      
-    echo "`date` : instances = $instances" >>/tmp/test.txt
     echo  ${instances:-0}
 }
 
@@ -112,15 +101,15 @@ done
 
 wan_device_add_instances_wancxdev() {
     local cur_instances=`wan_device_get_max_instances`
-    local max_instances=7
+    local subwan_index_max=8
     subwan_index=0
 
-    if [ $((++cur_instances))  -ge $max_instances];then                                         
+    if [ $((++cur_instances))  -ge $subwan_index_max];then                                         
         exit 0
     fi                             
 
     ##subwan interface                     
-    while [ $subwan_index -le $max_instances ]   
+    while [ $subwan_index -lt $subwan_index_max ]   
     do                                                                          
             if [ $subwan_index = 0 ];then                                         
               wan_iface="subwan"                                                
@@ -151,10 +140,10 @@ wan_device_add_instances_wancxdev() {
             subwan_index=$(($subwan_index+1))
     done
 
-    if [ $((++cur_instances))  -le $max_instances];then                                         
+    if [ $((++cur_instances))  -lt $subwan_index_max];then                                         
         echo $((++cur_instances))              
     else                                                                
-        echo $max_instances
+        echo $subwan_index_max
     fi                             
 }
 
