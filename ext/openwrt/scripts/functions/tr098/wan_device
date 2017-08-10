@@ -222,7 +222,6 @@ do
                 wan_num=$(($wan_num+1))
          }
 done
-	  echo $wanstring > /tmp/michael1
 ##subwan interface                     
 while [ $subwan_num -le 7 ]   
 do                                                                          
@@ -252,7 +251,6 @@ do
                 subwan_num=$(($subwan_num+1)) 
         }                                     
 done                                          
-	  echo $subwanstring > /tmp/michael     
 	if [ $all_subwan = "0" ];then
 	 subwanstring=$wanstring
 	fi
