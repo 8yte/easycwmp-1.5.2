@@ -38,9 +38,21 @@ sub_entry_wandevice_wanconnectiondevice() {
 			IP)
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection." "0"
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1." "0"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Enable" "1" "wan_device_get_ipcx_enable $iface" "wan_device_set_ipcx_enable $iface"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionStatus" "0" "wan_device_get_ipcx_status $iface"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ExternalIPAddress" "0" "wan_device_get_ipcx_ipaddr $iface" "" "" "$default"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.PossibleConnectionTypes" "0" "wan_device_get_ipcx_possible_contypes"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionType" "1" "wan_device_get_ipcx_contypes $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Name" "1" "wan_device_get_ipcx_name $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.RSIPAvailable" "0" "wan_device_get_ipcx_rsipavalilable"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.NATEnabled" "1" "wan_device_get_ipcx_natenable $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.AddressingType" "1" "wan_device_get_ipcx_addrtype $iface" "wan_device_set_ipcx_addrtype $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ExternalIPAddress" "1" "wan_device_get_ipcx_ipaddr $iface" "wan_device_set_ipcx_ipaddr $iface" 
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.SubnetMask" "1" "wan_device_get_ipcx_subnetmask $iface" "wan_device_set_ipcx_subnetmask $iface" 
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DefaultGateway" "1" "wan_device_get_ipcx_defaultgateway $iface" "wan_device_set_ipcx_defaultgateway $iface" 
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSEnabled" "1" "wan_device_get_ipcx_dnsenabled" ""  
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSServers" "1" "wan_device_get_ipcx_dnsservers $iface" ""  
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MACAddress" "0" "wan_device_get_ipcx_macaddr $iface"
+
 			;;
 			PPP)
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection." "0"
@@ -280,27 +292,10 @@ wan_device_get_ipcx_ipaddr() {
 	echo "$val"
 }
 
-wan_device_get_ipcx_macaddr() {
-        local val iface="$1"
-        local type
-        val=$(uci get network.$iface.macaddr)
-        if [ -z "$val" ]; then
-            type=$(uci get network.$iface.type)
-            if [ -z $type ];then
-              iface=$(uci get network.$iface.ifname)
-            else
-            {
-                [ $type = "bridge" ] &&
-                {
-                     iface=br-$iface
-                }
-            }
-            fi
-            [ -z $iface ] ||
-            val=$(ifconfig $iface |grep HWaddr |awk '{print $5;}')
-         fi
-
-        echo $val	
+wan_device_set_ipcx_ipaddr() {
+    local wan_iface=$1
+    uci set network.$wan_iface.ipaddr=$2
+    uci commit network
 }
 
 wan_device_get_wan_ppp_enable() {
@@ -363,5 +358,188 @@ wan_device_get_WANPPPConnectionNumberOfEntries()
     } || {
            echo 0
     }
+}
+
+wan_device_get_ipcx_enable()
+{
+    local wan_iface=$1
+    local wan_disabled=""
+    wan_disabled=$(uci get network.$wan_iface.disabled) &> /dev/null
+    if [ "$wan_disabled" = "1" ]; then
+    {
+           echo "0"
+    } 
+    elif [ "$wan_disabled" = "0" ]; then
+    {
+           echo "1"
+    }   
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+}
+
+wan_device_set_ipcx_enable()
+{
+    local wan_iface=$1
+    local val=$2
+    if [ "$val" = "0" -o  "$val" = "false" ]; then
+    {
+           uci set network.$wan_iface.disabled="1"
+           uci commit network
+    } 
+    elif [ "$val" = "1" -o "$val" = "true" ]; then
+    {
+           uci set network.$wan_iface.disabled="0"
+           uci commit network
+    }   
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+    return 0
+}
+
+wan_device_get_ipcx_possible_contypes()
+{
+    echo "IP_Routed,IP_Bridged"
+}
+wan_device_get_ipcx_contypes()
+{
+    local wan_iface=$1
+    local wan_proto=""
+    wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
+    [ "$wan_proto" = "relay" ] &&
+    {
+           echo "IP_Bridged"
+    } || {
+           echo "IP_Routed"
+    }    
+}
+
+wan_device_get_ipcx_name()
+{
+    local wan_iface=$1
+    local wan_ifname=""
+    wan_ifname=$(uci get network.$wan_iface.ifname) &> /dev/null
+    echo $wan_ifname
+}
+
+wan_device_get_ipcx_rsipavalilable()
+{
+    echo 0
+}
+
+wan_device_get_ipcx_natenable()
+{
+    echo 0
+}
+
+wan_device_get_ipcx_addrtype()
+{
+    local wan_iface=$1
+    local wan_addrtype=""
+    wan_addrtype=$(uci get network.$wan_iface.proto) &> /dev/null
+    if [ "$wan_addrtype" = "dhcp" ]; then
+    {
+           echo "DHCP"
+    } 
+    elif [ "$wan_addrtype" = "static" ]; then
+    {
+           echo "Static"
+    }   
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+}
+
+wan_device_set_ipcx_addrtype()
+{
+    local wan_iface=$1
+    local val=$2
+    if [ "$val" = "DHCP" ]; then
+    {
+           uci set network.$wan_iface.proto="dhcp"
+           uci commit network
+    } 
+    elif [ "$val" = "Static" ]; then
+    {
+           uci set network.$wan_iface.proto="static"
+           uci commit network
+    }   
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+    return 0
+}
+
+wan_device_get_ipcx_subnetmask()
+{
+    local wan_iface=$1
+    local wan_netmask=""
+    wan_netmask=$(uci get network.$wan_iface.netmask) &> /dev/null
+    echo $wan_netmask
+}
+
+wan_device_set_ipcx_subnetmask()
+{
+    local wan_iface=$1
+    uci set network.$wan_iface.netmask=$2
+    uci commit network
+}
+
+wan_device_get_ipcx_defaultgateway()
+{
+    local wan_iface=$1
+    local wan_gateway=""
+    wan_gateway=$(uci get network.$wan_iface.gateway) &> /dev/null
+    echo $wan_gateway     
+}
+
+wan_device_set_ipcx_defaultgateway()
+{
+    local wan_iface=$1
+    uci set network.$wan_iface.gateway=$2
+    uci commit network
+}
+wan_device_get_ipcx_dnsenabled()
+{
+    echo "1"
+}
+
+wan_device_get_ipcx_dnsservers()
+{
+    local wan_iface=$1
+    local wan_dnsservers=""
+    wan_dnsservers=$(uci get network.$wan_iface.dns) &> /dev/null
+    echo $wan_dnsservers       
+}
+
+wan_device_set_ipcx_dnsservers()
+{
+    local wan_iface=$1
+    uci set network.$wan_iface.dns=$2
+    uci commit network
+}
+
+wan_device_get_ipcx_macaddr() {
+        local val iface="$1"
+        local type
+        val=$(uci get network.$iface.macaddr)
+        if [ -z "$val" ]; then
+            type=$(uci get network.$iface.type)
+            if [ -z $type ];then
+              iface=$(uci get network.$iface.ifname)
+            else
+            {
+                [ $type = "bridge" ] &&
+                {
+                     iface=br-$iface
+                }
+            }
+            fi
+            [ -z $iface ] ||
+            val=$(ifconfig $iface |grep HWaddr |awk '{print $5;}')
+         fi
+
+        echo $val	
 }
 
