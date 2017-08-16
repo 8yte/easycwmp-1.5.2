@@ -1,0 +1,53 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+[ "$1" != "run" ] && return
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+dnsquery_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+dnsquery_launch() {
+	local name=`dnsquery_get easycwmp.@local[0].DomainName`
+	local serverip=`dnsquery_get easycwmp.@local[0].DNSServerIP`
+	local repetitions=`dnsquery_get easycwmp.@local[0].NumberOfRepetitions`
+	local timeout=`dnsquery_get easycwmp.@local[0].Timeout`
+	[ "$name" = "" ] && return
+	
+	dnsquery $timeout $repetitions $name $serverip
+	par=`cat /tmp/dnsquery_state  | grep SuccessCount | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].SuccessCount=$par
+	par=`cat /tmp/dnsquery_state  | grep FailureCount | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].FailureCount=$par			
+	par=`cat /tmp/dnsquery_state  | grep MinmumResponseTime | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].MinimumResponseTime=$par
+	par=`cat /tmp/dnsquery_state  | grep MaximymResponseTime | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].MaximumResponseTime=$par
+	par=`cat /tmp/dnsquery_state  | grep AverageResponseTime | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].AverageResponseTime=$par
+	par=`cat /tmp/dnsquery_state  | grep ResponseParaList | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].ResponseParaList=$par	
+	par=`cat /tmp/dnsquery_state  | grep DiagnosticState | awk -F '=' '{print $2}'`
+	$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=$par
+	
+	sync
+	event_dignostic
+}
+
+event_dignostic() {
+	local e=1
+	local i=0
+	while [ "$e" != 0 -a $i -lt 200 ]; do	
+		ubus -t 1 call tr069 inform '{"event":"8 DIAGNOSTICS COMPLETE"}'
+		e=$?
+		[ "$e" != "0" ] && sleep 1;
+		let i++
+	done
+}
+
+dnsquery_launch
