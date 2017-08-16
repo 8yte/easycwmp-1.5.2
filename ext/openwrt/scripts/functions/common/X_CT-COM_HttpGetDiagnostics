@@ -1,0 +1,74 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: Michael.wu
+#
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.X_CT-COM_HttpGetDiagnostics."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_HttpGetDiagnostics"
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+entry_execute_method_root_HttpGetDiagnostics() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_HttpGetDiagnostics."*)
+		common_execute_method_obj "$DMROOT.X_CT-COM_HttpGetDiagnostics." "0"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.DiagnosticsState" "1" "httpget_get easycwmp.@local[0].DiagnosticsState" "httpget_set_diagnostic_state"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.Interface" "1" "httpget_get easycwmp.@local[0].Interface" "httpget_set easycwmp.@local[0].Interface"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.URL" "1" "httpget_get easycwmp.@local[0].URL" "httpget_set easycwmp.@local[0].URL"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.HttpVersion" "1" "httpget_get easycwmp.@local[0].HttpVersion" "httpget_set easycwmp.@local[0].HttpVersion"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.NumberOfRepetitions" "1" "httpget_get easycwmp.@local[0].NumberOfRepetitions" "httpget_set easycwmp.@local[0].NumberOfRepetitions"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.Timeout" "1" "httpget_get easycwmp.@local[0].Timeout" "httpget_set easycwmp.@local[0].Timeout"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.SuccessCount" "0" "httpget_get easycwmp.@local[0].SuccessCount"  "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.FailureCount" "0" "httpget_get easycwmp.@local[0].FailureCount"  "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.MinimumResponseTime" "0" "httpget_get easycwmp.@local[0].MinimumResponseTime"  "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.MaximumResponseTime" "0" "httpget_get easycwmp.@local[0].MaximumResponseTime"  "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.AverageResponseTime" "0" "httpget_get easycwmp.@local[0].AverageResponseTime"  "xsd:unsignedInt"
+
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+#######################################
+#   Data model parameters functions   #
+#######################################
+httpget_get() {
+	local val=`$UCI_GET_VARSTATE $1`
+	echo ${val:-$2}
+}
+
+httpget_set() {
+	httpget_stop_diagnostic
+	if [ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`" != "Requested" ]; then
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+	$UCI_SET_VARSTATE $1=$2
+	return 0
+}
+
+httpget_set_diagnostic_state()
+{
+	local val="$1"
+	case $val in 
+		Requested)
+			httpget_stop_diagnostic
+			$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=Requested
+			common_execute_command_in_apply_service "/bin/sh $FUNCTION_PATH/httpget_launch run &"
+			return 0
+		;;
+	esac
+	return $E_INVALID_PARAMETER_VALUE;    
+}
+
+httpget_stop_diagnostic() {
+	local pids=`ps www | grep httpget| grep -v grep | awk '{print $2}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids
+		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
+	fi
+}
+
