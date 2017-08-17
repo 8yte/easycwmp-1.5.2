@@ -17,6 +17,19 @@ entry_execute_method_root_WANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.WANDevice."*)
 		common_execute_method_obj "$DMROOT.WANDevice." "0"
 		common_execute_method_obj "$DMROOT.WANDevice.1." "0"
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Enable" "1" "wan_device_get_ethconfig_enable" "wan_device_set_ethconfig_enable"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Status" "0" "wan_device_get_ethconfig_status"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.MACAddress" "0" "wan_device_get_ethconfig_mac"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.MaxBitRate" "1" "wan_device_get_ethconfig_maxbitrate"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.DuplexMode" "1" "wan_device_get_ethconfig_duplexmode"
+
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Stats." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Stats.BytesSent" "0"  "wan_device_get_ethstats_bytessent"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Stats.BytesReceived" "0"  "wan_device_get_ethstats_bytesrecv"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Stats.PacketsSent" "0"  "wan_device_get_ethstats_packssent"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Stats.PacketsReceived" "0"  "wan_device_get_ethstats_packsrecv"
+
 		common_execute_method_obj "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig." "0"
 		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Status" "0" "wan_device_get_ponStatus" ""
 		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.TXPower" "0" "wan_device_get_ponTXPower" ""
@@ -736,4 +749,88 @@ wan_device_get_ponStatsRPausePackets()
     echo $val
 }
 
+wan_device_get_ethconfig_enable()
+{
+    local val=`uci get /etc/config/network.wan.disabled`
+    if [ "$val" == "1" ]; then
+        echo 0
+    elif [ "$val" == "0" ]; then
+        echo 1   
+    else
+         echo 1
+    fi
+}
+
+wan_device_set_ethconfig_enable()
+{
+    if [ "$1" == "1" ]; then
+        uci set /etc/config/network.wan.disabled=0
+        uci commit network
+        ifup wan
+    elif [ "$1" == "0" ]; then
+        uci set /etc/config/network.wan.disabled=1
+        uci commit network
+        ifdown wan
+    else
+        uci set /etc/config/network.wan.disabled=0
+        uci commit network
+        ifup wan
+    fi
+}
+
+wan_device_get_ethconfig_status()
+{
+    local val=`uci get /etc/config/network.wan.disabled`
+    if [ "$val" == "1" ]; then
+        echo 0
+    elif [ "$val" == "0" ]; then
+        echo 1   
+    else
+         echo 1
+    fi
+}
+
+wan_device_get_ethconfig_mac()
+{
+    local val=`ifconfig eth1.4093 | grep HWaddr | awk '{print $5}'`
+    echo $val
+}
+
+wan_device_get_ethconfig_maxbitrate()
+{
+    local val="100"
+    echo $val
+}
+
+wan_device_get_ethconfig_duplexmode()
+{
+    local val="Full"
+    echo $val
+}
+
+wan_device_get_ethstats_bytessent()
+{
+    local tmp=`ifconfig eth1.4093 |grep "RX bytes"`
+    local val=`echo ${tmp##*TX} |  awk -F ':' '{print $2}' | awk '{print $1}'`
+    echo $val
+}
+
+wan_device_get_ethstats_bytesrecv()
+{
+    local tmp=`ifconfig eth1.4093 |grep "RX bytes"`
+    local val=`echo ${tmp%TX*} |  awk -F ':' '{print $2}' | awk '{print $1}'`
+    echo $val
+}
+
+wan_device_get_ethstats_packssent()
+{
+    local val=` ifconfig eth1.4093 | grep "TX packets" |awk '{print $2}' | awk -F ':' '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ethstats_packsrecv()
+{
+    local val=` ifconfig eth1.4093 | grep "RX packets" |awk '{print $2}' | awk -F ':' '{print $2}'`
+    echo $val
+}
 
