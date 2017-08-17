@@ -17,6 +17,54 @@ entry_execute_method_root_WANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.WANDevice."*)
 		common_execute_method_obj "$DMROOT.WANDevice." "0"
 		common_execute_method_obj "$DMROOT.WANDevice.1." "0"
+		common_execute_method_obj "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Status" "0" "wan_device_get_ponStatus" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.TXPower" "0" "wan_device_get_ponTXPower" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.RXPower" "0" "wan_device_get_ponRXPower" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.TransceiverTemperature" "0" "wan_device_get_ponTransceiverTemperature" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.SupplyVottage" "0" "wan_device_get_ponSupplyVottage" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.BiasCurrent" "0" "wan_device_get_ponBiasCurrent" ""
+		common_execute_method_obj "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.BytesSent" "0" "wan_device_get_ponStatsBytesSent" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.BytesReceived" "0" "wan_device_get_ponStatsBytesReceived" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.PacketsSent" "0" "wan_device_get_ponStatsPacketsSent" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.PacketsReceived" "0" "wan_device_get_ponStatsPacketsReceived" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.SUnicastPackets" "0" "wan_device_get_ponStatsSUnicastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.RUnicastPackets" "0" "wan_device_get_ponStatsRUnicastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.SMulticastPackets" "0" "wan_device_get_ponStatsSMulticastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.RMulticastPackets" "0" "wan_device_get_ponStatsRMulticastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.SBroadcastPackets" "0" "wan_device_get_ponStatsSBroadcastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.RBroadcastPackets" "0" "wan_device_get_ponStatsRBroadcastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.FECError" "0" "wan_device_get_ponStatsFECError" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.HECError" "0" "wan_device_get_ponStatsHECError" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.DropPackets" "0" "wan_device_get_ponStatsDropPacketst" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.SPausePackets" "0" "wan_device_get_ponStatsSPausePackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_GponInterfaceConfig.Stats.RPausePackets" "0" "wan_device_get_ponStatsRPausePackets" ""
+
+		common_execute_method_obj "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Status" "0" "wan_device_get_ponStatus" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.TXPower" "0" "wan_device_get_ponTXPower" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.RXPower" "0" "wan_device_get_ponRXPower" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.TransceiverTemperature" "0" "wan_device_get_ponTransceiverTemperature" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.SupplyVottage" "0" "wan_device_get_ponSupplyVottage" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.BiasCurrent" "0" "wan_device_get_ponBiasCurrent" ""
+		common_execute_method_obj "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.BytesSent" "0" "wan_device_get_ponStatsBytesSent" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.BytesReceived" "0" "wan_device_get_ponStatsBytesReceived" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.PacketsSent" "0" "wan_device_get_ponStatsPacketsSent" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.PacketsReceived" "0" "wan_device_get_ponStatsPacketsReceived" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.SUnicastPackets" "0" "wan_device_get_ponStatsSUnicastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.RUnicastPackets" "0" "wan_device_get_ponStatsRUnicastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.SMulticastPackets" "0" "wan_device_get_ponStatsSMulticastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.RMulticastPackets" "0" "wan_device_get_ponStatsRMulticastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.SBroadcastPackets" "0" "wan_device_get_ponStatsSBroadcastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.RBroadcastPackets" "0" "wan_device_get_ponStatsRBroadcastPackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.FECError" "0" "wan_device_get_ponStatsFECError" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.HECError" "0" "wan_device_get_ponStatsHECError" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.DropPackets" "0" "wan_device_get_ponStatsDropPacketst" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.SPausePackets" "0" "wan_device_get_ponStatsSPausePackets" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.X_CT-COM_EponInterfaceConfig.Stats.RPausePackets" "0" "wan_device_get_ponStatsRPausePackets" ""
+		
 		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice." "1" "wan_device_add_instances_wancxdev $1" "" "wan_device_browse_instances_wancxdev $1"
 		return 0
 		;;
@@ -542,4 +590,150 @@ wan_device_get_ipcx_macaddr() {
 
         echo $val	
 }
+
+wan_device_get_ponStatus()
+{
+    local ponstatus=`cat /proc/pon_status`
+    if [ "$ponstatus" = "Los" ]; then
+    {
+        echo "NoSignal"
+    } 
+    elif [ "$val" = "Registering " ]; then
+    {
+        echo "EstablishingLink"
+    }   
+    
+    elif [ "$val" = "Registered " -o "$val" = "Authened  " ]; then
+    {
+        echo "UP"
+    }   
+    
+    elif [ "$val" = "Registered " ]; then
+    {
+        echo "Disabled"
+    }   
+    else
+        echo "Error"
+    fi     
+}
+
+wan_device_get_ponTXPower()
+{
+    local ponstatus=`cat /sys/devices/platform/pon/info/parameter  | grep TX |awk -F ":" '{print $2}' | sed s/[[:space:]]//g`
+    echo $ponstatus
+}
+
+wan_device_get_ponRXPower()
+{
+    local ponstatus=`cat /sys/devices/platform/pon/info/parameter  | grep RX |awk -F ":" '{print $2}' | sed s/[[:space:]]//g`
+    echo $ponstatus
+}
+
+wan_device_get_ponTransceiverTemperature()
+{
+    local ponstatus=`cat /sys/devices/platform/pon/info/parameter  | grep TCverTemperature |awk -F ":" '{print $2}' | sed s/[[:space:]]//g`
+    echo $ponstatus
+}
+
+wan_device_get_ponSupplyVottage()
+{
+    local ponstatus=`cat /sys/devices/platform/pon/info/parameter  | grep SupplyVoltage |awk -F ":" '{print $2}' | sed s/[[:space:]]//g`
+    echo $ponstatus
+}
+
+wan_device_get_ponBiasCurrent()
+{
+    local ponstatus=`cat /sys/devices/platform/pon/info/parameter  | grep BiasCurrent |awk -F ":" '{print $2}' | sed s/[[:space:]]//g`
+    echo $ponstatus
+}
+
+wan_device_get_ponStatsBytesSent()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep GoodOctetsSent |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsBytesReceived()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep GoodOctetsReceived |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsSUnicastPackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep GoodFramesSent |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsPacketsReceived()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep GoodFramesReceived |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsPacketsSent()
+{
+    echo 0
+}
+
+wan_device_get_ponStatsPacketsReceived()
+{
+    echo 0
+}
+
+
+wan_device_get_ponStatsSMulticastPackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep MulticastFramesSent |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsRMulticastPackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep MulticastFramesReceived |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsSBroadcastPackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep BroadcastFramesSent |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsRBroadcastPackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep BroadcastFramesReceived |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsFECError()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep FECError |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsHECError()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep HECError |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsDropPacketst()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep DropPackets |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsSPausePackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep SendPausePackets |awk '{print $2}'`
+    echo $val
+}
+
+wan_device_get_ponStatsRPausePackets()
+{
+    local val=`cat /sys/devices/platform/pon/info/counter | grep ReceivedPausePackets |awk '{print $2}'`
+    echo $val
+}
+
 
