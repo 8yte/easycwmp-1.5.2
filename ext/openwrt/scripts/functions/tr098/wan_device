@@ -17,6 +17,18 @@ entry_execute_method_root_WANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.WANDevice."*)
 		common_execute_method_obj "$DMROOT.WANDevice." "0"
 		common_execute_method_obj "$DMROOT.WANDevice.1." "0"
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANCommonInterfaceConfig." "0"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.EnabledForInternet" "1" "wan_device_get_comconfig_enable" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.WANAccessType" "0" "wan_device_get_comconfig_accesstype" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.Layer1UpstreamMaxBitRate" "0" "wan_device_get_comconfig_uprate" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.Layer1DownstreamMaxBitRate" "0" "wan_device_get_comconfig_downrate" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.PhysicalLinkStatus" "0" "wan_device_get_comconfig_phystatus" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.TotalPacketsSent" "0" "wan_device_get_comconfig_packetsent" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.TotalPacketsReceived" "0" "wan_device_get_comconfig_packetrecv" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.TotalBytesSent" "0" "wan_device_get_comconfig_bytesent" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANCommonInterfaceConfig.TotalBytesReceived" "0" "wan_device_get_comconfig_bytesrecv" ""
+
+
 		common_execute_method_obj "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig." "0"
 		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Enable" "1" "wan_device_get_ethconfig_enable" "wan_device_set_ethconfig_enable"
 		common_execute_method_param "$DMROOT.WANDevice.1.WANEthernetInterfaceConfig.Status" "0" "wan_device_get_ethconfig_status"
@@ -834,3 +846,95 @@ wan_device_get_ethstats_packsrecv()
     echo $val
 }
 
+wan_device_get_comconfig_enable()
+{
+    echo 1
+}
+
+wan_device_get_comconfig_accesstype()
+{
+     local val=`uci get /etc/config/upmode.global.mode`
+     if [ "$val" == ""]; then
+        echo "GPON"
+     else
+        echo "$val"
+     fi        
+}
+
+wan_device_get_comconfig_uprate()
+{
+    echo "0"
+}
+
+wan_device_get_comconfig_downrate()
+{
+    echo "0"
+}
+
+wan_device_get_comconfig_phystatus()
+{
+    echo "UP"
+}
+
+
+wan_comconfig_data()
+{
+    local subwan_num=0
+    local subwan_stats=0
+    local subwan_total_stats=0
+    local all_stats=0
+    local wan_if=`uci get /etc/config/network.wan.ifname`
+   echo "`date`: test = $1" > /tmp/123.txt
+   local index=$1
+   echo "`date`: index = $1" >> /tmp/123.txt
+
+    local wan_stats=`cat /proc/net/dev | grep eth1.4093 | awk -F ":" '{print $2}' |awk '{print $i}' i="$index"`
+   echo "`date`: wan_stats = $wan_stats" >> /tmp/123.txt
+
+    while [ $subwan_num -le 7 ]   
+    do                                                                          
+        if [ $subwan_num = 0 ];then                                         
+          subwan_iface="subwan"                                                
+        else                                                                
+           subwan_iface="subwan$subwan_num"         
+        fi                             
+        subwan_if=$(uci get network.$wan_iface.ifname) &> /dev/null
+        [ -z $subwan_if ] &&
+        {
+             subwan_num=$(($subwan_num+1)) 
+             continue
+        }||
+        {        
+            subwan_stats=`cat /proc/net/dev | grep $subwan_if | awk  '{print $11}'`
+            subwan_total_stats=$(($subwan_total_stats+$subwan_stats)) 
+            subwan_num=$(($subwan_num+1)) 
+        }    
+    done
+    all_stats=$(($subwan_total_stats+$wan_stats)) 
+    echo "`date`: all_stats = $all_stats" >> /tmp/123.txt
+    echo $all_stats
+}
+
+wan_device_get_comconfig_packetsent()
+{
+    local val=$(wan_comconfig_data 10)  
+    echo $val
+}
+
+wan_device_get_comconfig_packetrecv()
+{
+    local val=$(wan_comconfig_data 2)  
+    echo $val
+}
+
+wan_device_get_comconfig_bytesent()
+{
+    local val=$(wan_comconfig_data 9)  
+    echo $val
+}
+
+wan_device_get_comconfig_bytesrecv()
+{
+    local val=$(wan_comconfig_data 1)  
+    echo $val
+}
