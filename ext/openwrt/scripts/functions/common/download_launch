@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
 # 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+. /lib/functions/subwaninterface.sh
 
 [ "$1" != "run" ] && return
 
@@ -18,14 +19,17 @@ download_launch() {
 	[ "`$UCI_GET_VARSTATE easycwmp.@local[0].DiagnosticsState`" != "Requested" ] && return
 	local url=`download_get easycwmp.@local[0].DownloadURL`
 	local inter=`download_get easycwmp.@local[0].Interface`
+        local if_name=`get_subwan_ifname_by_interface $inter`
 	echo "`date`: url =$url ">>/tmp/debug_download.txt
+	echo "`date`: inter = $inter ">>/tmp/debug_download.txt
+	echo "`date`: if_name = $if_name ">>/tmp/debug_download.txt
 	[ "$url" = "" ] && return
 	echo "`date`: inter =$inter ">>/tmp/debug_download.txt
-	[ "$inter" = "" ] && return
+	[ "$if_name" = "" ] && return
 	local flag=1
 	local  par
 	echo "`date`: run httpdownload">>/tmp/debug_download.txt
-	httpdownload $url $inter  2>&1
+	httpdownload $url $if_name  2>&1
 	while [ "$flag" != 0 ]; do	
 		http_code=`cat  /tmp/httpdownload_state  | grep HTTPCode`
                 echo "`date`: $http_code">>/tmp/debug_download.txt
