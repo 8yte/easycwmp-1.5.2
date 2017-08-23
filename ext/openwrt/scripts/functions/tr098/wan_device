@@ -12,7 +12,6 @@ prefix_list="$prefix_list $DMROOT.WANDevice."
 entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_WANDevice"
 entry_execute_method_list_forcedinform="$entry_execute_method_list_forcedinform entry_execute_method_root_WANDevice"
 
-
 entry_execute_method_root_WANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.WANDevice."*)
 		common_execute_method_obj "$DMROOT.WANDevice." "0"
@@ -106,6 +105,29 @@ sub_entry_wandevice_wanconnectiondevice() {
 		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j." "1"  "" "wan_device_del_instances_wancxdev $iface" 
 		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnectionNumberOfEntries" "0" "wan_device_get_WANIPConnectionNumberOfEntries $iface" "" " xsd:unsignedInt"
 		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnectionNumberOfEntries" "0" "wan_device_get_WANPPPConnectionNumberOfEntries $iface" "" " xsd:unsignedInt"
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANEthernetLinkConfig." "0" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANEthernetLinkConfig.EthernetLinkStatus" "0" "wan_device_get_ethstatus $iface" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANEthernetLinkConfig.X_CT-COM_VLANIDMark" "1" "wan_device_get_ethVLANID $iface" "wan_device_set_ethVLANID $iface"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANEthernetLinkConfig.X_CT-COM_802-1pMark" "1" "" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANEthernetLinkConfig.X_CT-COM_Mode" "1" "wan_device_get_ethVLANMODE $iface" "wan_device_set_ethVLANMODE $iface"
+
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANPONLinkConfig." "0" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANPONLinkConfig.Enable" "1" "wan_device_get_ipcx_enable $iface" "wan_device_set_ipcx_enable $iface"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANPONLinkConfig.TCType" "0" "" ""
+
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANGponLinkConfig." "0" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANGponLinkConfig.Enable" "1" "" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANGponLinkConfig.X_CT-COM_VLANIDMark" "1" "wan_device_get_ethVLANID $iface" "wan_device_set_ethVLANID $iface"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANGponLinkConfig.X_CT-COM_802-1pMark" "1" "" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANGponLinkConfig.X_CT-COM_Mode" "1" "wan_device_get_ethVLANMODE $iface" "wan_device_set_ethVLANMODE $iface"
+
+
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANEponLinkConfig." "0" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANEponLinkConfig.Enable" "1" "" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANEponLinkConfig.X_CT-COM_VLANIDMark" "1" "wan_device_get_ethVLANID $iface" "wan_device_set_ethVLANID $iface"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANEponLinkConfig.X_CT-COM_802-1pMark" "1" "" ""
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.X_CT-COM_WANEponLinkConfig.X_CT-COM_Mode" "1" "wan_device_get_ethVLANMODE $iface" "wan_device_set_ethVLANMODE $iface"
+
 
 		case $protocol in
 			IP)
@@ -472,6 +494,8 @@ wan_device_set_ipcx_enable()
     else
         return $E_INVALID_PARAMETER_VALUE
     fi
+    ifdown $wan_iface
+    ifup $wan_iface
     return 0
 }
 
@@ -941,4 +965,63 @@ wan_device_get_comconfig_bytesrecv()
 {
     local val=$(wan_comconfig_data 1)  
     echo $val
+}
+
+wan_device_get_ethstatus()
+{
+    local wan_iface=$1
+    wan_status=$(uci get -P /var/state/ network.$wan_iface.up) &> /dev/null
+    if [ "$wan_status" = "1" ]; then
+    {
+        echo "UP"
+    } 
+    elif [ "$wan_status" = "0" ]; then
+    {
+        echo "Down"
+    }   
+    else
+        echo "Down" 
+    fi
+}
+
+wan_device_get_ethVLANID()
+{
+    local wan_iface=$1
+    local if_name=$(uci get network.$wan_iface.ifname) &> /dev/null
+    echo ${if_name##*.}
+}
+
+wan_device_set_ethVLANID()
+{
+    local wan_iface=$1
+    local new_vid=$2
+    local if_name=$(uci get network.$wan_iface.ifname) &> /dev/null
+    if_name_left=${if_name%.*}
+    if_name_new="$if_name_left"".""$new_vid"
+    uci set network.$wan_iface.ifname="$if_name_new"
+    uci commit network    
+    ifdown $1
+    ifup $1
+}
+
+wan_device_get_ethVLANMODE()
+{
+    local wan_iface=$1
+    local vlanmode=""
+    vlanmode=$(uci get network.$wan_iface.vlanmode) &> /dev/null
+    if [ $vlanmode == "" ]; then
+    {                  
+         echo $vlanmode              
+    }
+    else
+    {    
+        echo "0"
+    }
+    fi
+}
+
+wan_device_set_ethVLANMODE()
+{
+    uci set network.$1.vlanmode=$2
+    uci commit network    
 }
