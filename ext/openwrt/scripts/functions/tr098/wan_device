@@ -148,6 +148,8 @@ sub_entry_wandevice_wanconnectiondevice() {
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSServers" "1" "wan_device_get_ipcx_dnsservers $iface" ""  
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MACAddress" "0" "wan_device_get_ipcx_macaddr $iface"
 
+			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.PortMapping." "1" "add_portmap_instances" "" "browse_portmap_instances $1"
+			
 			;;
 			PPP)
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANPPPConnection." "0"
@@ -1022,6 +1024,203 @@ wan_device_get_ethVLANMODE()
 
 wan_device_set_ethVLANMODE()
 {
-    uci set network.$1.vlanmode=$2
+    uci set network.$1.vlanmode="$2"
     uci commit network    
 }
+
+portmap_update_instance()
+{
+    local redirect="$1"
+    local num=0
+    local src=`$UCI_GET firewall.$redirect.src`
+    if [ -n "$src" ]; then
+        num=`echo $redirect | cut -d '[' -f2 |cut -d ']' -f1`
+    fi
+    echo $num > /tmp/test.txt
+    echo $num
+}
+
+add_portmap_instances()
+{
+	local firewall=`uci add firewall redirect`
+	uci set  firewall.$firewall.target="DNAT"
+	uci set  firewall.$firewall.src="wan"
+	uci set  firewall.$firewall.dest="lan"
+	uci set  firewall.$firewall.proto="tcp udp"
+	uci set  firewall.$firewall.src_dport="0"
+	uci set  firewall.$firewall.dest_ip="192.168.1.1"
+	uci set  firewall.$firewall.dest_port="0"
+	uci set  firewall.$firewall.name="Forward$firewall"
+	uci commit  firewall
+        /etc/init.d/firewall restart &> /dev/null
+	echo "1"
+}
+
+browse_portmap_instances()
+{
+    echo "`date`: browse_portmap_instances">/tmp/debug_portmap.txt
+
+    local redirect redirects=`$UCI_SHOW firewall | grep "firewall\.@redirect\[.*\]=redirect" | awk -F'[.=]' '{print $2}'`
+    echo "`date`: redirects=$redirects">>/tmp/debug_portmap.txt
+    for redirect in $redirects; do
+         echo "`date`: redirect=$redirect">>/tmp/debug_portmap.txt
+
+    	local j=`portmap_update_instance $redirect`
+    	sub_entry_portmap_instances  "$1" "$j" "$redirect"
+    done
+    return 0 
+}
+
+sub_entry_portmap_instances() {
+	local j="$2"
+	local redirect="$3"
+        local wan_index=0    
+        wan_index=`echo $1| cut -d '.' -f5`
+
+	case_param "$1" belongto "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j." && {
+		common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j." "1" "" "portmap_delete_instance $redirect"
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.PortMappingEnabled" "1" "wan_device_get_portmap_enable $redirect" "wan_device_set_portmap_enable $redirect" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.PortMappingLeaseDuration" "1" "wan_device_get_portmap_lease $redirect" "" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.RemoteHost" "1" "" "" 
+
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.ExternalPort" "1" "wan_device_get_portmap_export $redirect" "wan_device_set_portmap_export $redirect" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.InternalPort" "1" "wan_device_get_portmap_inport $redirect" "wan_device_set_portmap_inport $redirect" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.InternalClient" "1" "wan_device_get_portmap_inclient $redirect" "wan_device_set_portmap_inclient $redirect" 
+		common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$wan_index.WANIPConnection.1.PortMapping.$j.PortMappingProtocol" "1" "wan_device_get_portmap_proto $redirect" "wan_device_set_portmap_proto $redirect" 
+
+		return 0
+	}
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+portmap_delete_instance()
+{
+    uci delete firewall.$1
+    uci commit firewall
+    /etc/init.d/firewall restart &> /dev/null
+    return 0    
+}
+
+wan_device_get_portmap_enable()
+{
+    local redirect=$1
+    local enabled=$(uci get firewall.$redirect.enabled) &> /dev/null
+    if [ "$enabled" == "0" ]; then
+    {    
+        echo "0"
+    }
+    else
+        echo "1"
+    fi
+}
+
+wan_device_set_portmap_enable()
+{
+    local redirect=$1
+    local val=$2
+    if [ "$val" == "1" ]; then
+    {    
+        uci delete firewall.$redirect.enabled
+        uci commit firewall    
+    }
+    elif [ "$val" == "0" ]; then
+    {
+        uci set firewall.$redirect.enabled="0"
+        uci commit firewall    
+    }
+    else
+	return $E_INVALID_PARAMETER_VALUE;
+    fi
+    /etc/init.d/firewall restart &> /dev/null
+    return 0
+}
+
+wan_device_get_portmap_lease()
+ {
+     echo 0
+ }
+
+wan_device_get_portmap_export()
+{
+    local val=""
+    local redirect=$1
+    val=$(uci get firewall.$redirect.src_dport) &> /dev/null
+    if [ "$val" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+        echo $val
+    fi
+}
+
+wan_device_set_portmap_export()
+{
+    uci set firewall.$1.src_dport="$2"
+    uci commit firewall
+    return 0
+}
+
+wan_device_get_portmap_inport()
+{
+    local val=""
+    local redirect=$1
+    val=$(uci get firewall.$redirect.dest_port) &> /dev/null
+    if [ "$val" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+        echo $val
+    fi
+}
+
+wan_device_set_portmap_inport()
+{
+    uci set firewall.$1.dest_port="$2"
+    uci commit firewall
+    return 0
+}
+
+wan_device_get_portmap_inclient()
+{
+    local val=""
+    local redirect=$1
+    val=$(uci get firewall.$redirect.dest_ip) &> /dev/null
+    if [ "$val" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+        echo $val
+    fi
+}
+
+wan_device_set_portmap_inclient()
+{
+    uci set firewall.$1.dest_ip="$2"
+    uci commit firewall
+    return 0
+}
+
+wan_device_get_portmap_proto()
+{
+    local val=""
+    local redirect="$1"
+    val=$(uci get firewall.$redirect.proto) &> /dev/null
+    if [ "$val" == "" ]; then
+    {    
+        echo "tcp udp"
+    }
+    else
+        echo $val
+    fi
+}
+
+wan_device_set_portmap_proto()
+{
+    uci set firewall.$1.proto="$2"
+    uci commit firewall
+    return 0
+}
+
