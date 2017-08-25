@@ -139,7 +139,7 @@ sub_entry_wandevice_wanconnectiondevice() {
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ConnectionType" "1" "wan_device_get_ipcx_contypes $iface"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Name" "1" "wan_device_get_ipcx_name $iface"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.RSIPAvailable" "0" "wan_device_get_ipcx_rsipavalilable"
-			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.NATEnabled" "1" "wan_device_get_ipcx_natenable $iface"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.NATEnabled" "1" "wan_device_get_ipcx_natenable $iface" "wan_device_set_ipcx_natenable $iface"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.AddressingType" "1" "wan_device_get_ipcx_addrtype $iface" "wan_device_set_ipcx_addrtype $iface"
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.ExternalIPAddress" "1" "wan_device_get_ipcx_ipaddr $iface" "wan_device_set_ipcx_ipaddr $iface" 
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.SubnetMask" "1" "wan_device_get_ipcx_subnetmask $iface" "wan_device_set_ipcx_subnetmask $iface" 
@@ -387,10 +387,8 @@ wan_device_get_ipcx_status() {
 }
 
 wan_device_get_ipcx_ipaddr() {
-	local val iface="$1"
-	
-	network_get_ipaddr val $iface
-	echo "$val"
+    local val=`uci get network.$1.ipaddr`
+    echo ${val:-1}
 }
 
 wan_device_set_ipcx_ipaddr() {
@@ -533,7 +531,78 @@ wan_device_get_ipcx_rsipavalilable()
 
 wan_device_get_ipcx_natenable()
 {
-    echo 0
+    local zone_index=0
+    local if_name=$1
+    local result=""
+    local val=0
+    while [ $zone_index -le 1 ]
+    do
+        zone_name=`uci get firewall.@zone[$zone_index].name`
+        if [ "$zone_name" = "wan" ];then
+        {
+            zone_network=`uci get firewall.@zone[$zone_index].network`
+            result=$(echo $zone_network | grep "${if_name}")
+            if [[ "$result" != "" ]]
+            then
+                val=1
+            else
+                val=0
+            fi
+            break
+        }
+        fi
+        zone_index=$(($zone_index+1))
+    done
+    echo $val
+}
+
+wan_device_set_ipcx_natenable()
+{
+    local if_name=$1
+    local value=$2
+
+    local zone_index=0
+    local if_name=$1
+    local result=""
+    local new_network=""
+
+    while [ $zone_index -le 1 ]
+    do
+        zone_name=`uci get firewall.@zone[$zone_index].name`
+        zone_network=`uci get firewall.@zone[$zone_index].network`
+        result=$(echo $zone_network | grep "${if_name}")
+        
+        if [ "$zone_name" = "wan" ];then
+        {            
+            if [ "$result" != "" -a  "$value" = "0" ]; then
+                new_network=`echo $zone_network | sed "s/$if_name//g" `
+            elif [ "$value" = "1" ]; then
+                new_network=${zone_network}" "${if_name}
+            fi           
+           uci set firewall.@zone[$zone_index].network="$new_network"
+           uci commit firewall                
+        }
+        elif [ "$zone_name" = "lan" ]; then
+        {
+            if [ "$result" != "" -a  "$value" = "1" ]; then
+                new_network=`echo $zone_network | sed "s/$if_name//g" `
+            elif [ "$value" = "0" ]; then
+                new_network=${zone_network}" "${if_name}
+            fi           
+           uci set firewall.@zone[$zone_index].network="$new_network"
+           uci commit firewall                
+        }
+        else
+        {
+            return 0
+        }
+        
+        fi
+        zone_index=$(($zone_index+1))
+    done
+
+    /etc/init.d/firewall restart &> /dev/null
+    return 0   
 }
 
 wan_device_get_ipcx_addrtype()
