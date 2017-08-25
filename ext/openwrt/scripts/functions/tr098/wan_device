@@ -167,7 +167,7 @@ sub_entry_wandevice_wanconnectiondevice() {
 
 wan_device_get_max_instances() {
 wan_index=0
-subwan_index=0
+subwan_index=1
 instances=0
 local wan_iface=""
 while [ $wan_index -le 2 ]
@@ -188,13 +188,9 @@ do
 done
 
 ##subwan interface                     
-while [ $subwan_index -le 7 ]   
+while [ $subwan_index -le 8 ]   
 do                                                                          
-        if [ $subwan_index = 0 ];then                                         
-          wan_iface="subwan"                                                
-        else                                                                
-           wan_iface="subwan$subwan_index"         
-        fi                             
+        wan_iface="subwan$subwan_index"         
         wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
 
         if [ "$wan_proto" != "" ]; then
@@ -214,7 +210,7 @@ done
 wan_device_add_instances_wancxdev() {
     local cur_instances=`wan_device_get_max_instances`
     local subwan_index_max=8
-    subwan_index=0
+    subwan_index=1
 
     if [ $((++cur_instances))  -ge $subwan_index_max];then                                         
         exit 0
@@ -222,31 +218,18 @@ wan_device_add_instances_wancxdev() {
 
     ##subwan interface                     
     while [ $subwan_index -lt $subwan_index_max ]   
-    do                                                                          
-            if [ $subwan_index = 0 ];then                                         
-              wan_iface="subwan"                                                
-            else                                                                
-               wan_iface="subwan$subwan_index"         
-            fi                             
+    do                                                                                                                                 
+            wan_iface="subwan$subwan_index"         
             wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
 
             if [ "$wan_proto" == "" ]; then
             {                  
-                ############ add subwan  #####################
-                if [ $subwan_index = 0 ];then                                         
-                     uci set network.subwan="interface"
-                     uci set network.subwan.ifname="subwan"
-                     uci set network.subwan.proto="dhcp"
-                     uci set network.subwan.site="wan"
-       		     uci commit network
-                else                                                                
-                     uci set network.$wan_iface="interface"
-                     uci set network.$wan_iface.ifname="subwan$subwan_index"
-                     uci set network.$wan_iface.proto="dhcp"
-                     uci set network.$wan_iface.site="wan"
-       		     uci commit network
-                fi                             
-                break
+                 uci set network.$wan_iface="interface"
+                 uci set network.$wan_iface.ifname="subwan$subwan_index"
+                 uci set network.$wan_iface.proto="dhcp"
+                 uci set network.$wan_iface.site="wan"
+                 uci commit network
+                 break
             }      
             fi
             subwan_index=$(($subwan_index+1))
@@ -296,7 +279,7 @@ wan_device_browse_instances_wancxdev() {
 wan_device_get_interface_maps() {
 	#should return a list like this: "<interface1>:<instance1>:<protocol>:<default interface? 1 : 0> <interface2>:<instance>:<protocol>:<default interface? 1 : 0>"
 wan_num=0
-subwan_num=0
+subwan_index=1
 all_subwan=8
 local wan_proto=""
 local wanstring_last=""
@@ -338,17 +321,13 @@ do
 done
 fi
 ##subwan interface                     
-while [ $subwan_num -le 7 ]   
+while [ $subwan_index -le 8 ]   
 do                                                                          
-        if [ $subwan_num = 0 ];then                                         
-          wan_iface="subwan"                                                
-        else                                                                
-           wan_iface="subwan$subwan_num"         
-        fi                             
+        wan_iface="subwan$subwan_index"                                             
         wan_proto=$(uci get network.$wan_iface.proto) &> /dev/null
         [ -z $wan_proto ] &&
         {                  
-             subwan_num=$(($subwan_num+1))
+             subwan_index=$(($subwan_index+1))
 	     all_subwan=$(($all_subwan-1))
              continue              
         }||                        
@@ -364,7 +343,7 @@ do
                  #subwanstring=$(echo $wanstring $subwanstring_last $wan_iface:$i:$wan_proto:0)
                  subwanstring=$(echo $subwanstring_last $wan_iface:$i:$wan_proto:0)
                         subwanstring_last=$subwanstring
-                subwan_num=$(($subwan_num+1)) 
+                subwan_index=$(($subwan_index+1)) 
         }                                     
 done                                          
 	if [ $all_subwan = "0" ];then
@@ -978,7 +957,7 @@ wan_device_get_comconfig_phystatus()
 
 wan_comconfig_data()
 {
-    local subwan_num=0
+    local subwan_index=1
     local subwan_stats=0
     local subwan_total_stats=0
     local all_stats=0
@@ -990,23 +969,19 @@ wan_comconfig_data()
     local wan_stats=`cat /proc/net/dev | grep eth1.4093 | awk -F ":" '{print $2}' |awk '{print $i}' i="$index"`
    echo "`date`: wan_stats = $wan_stats" >> /tmp/123.txt
 
-    while [ $subwan_num -le 7 ]   
+    while [ $subwan_index -le 8 ]   
     do                                                                          
-        if [ $subwan_num = 0 ];then                                         
-          subwan_iface="subwan"                                                
-        else                                                                
-           subwan_iface="subwan$subwan_num"         
-        fi                             
+        subwan_iface="subwan$subwan_index"         
         subwan_if=$(uci get network.$wan_iface.ifname) &> /dev/null
         [ -z $subwan_if ] &&
         {
-             subwan_num=$(($subwan_num+1)) 
+             subwan_index=$(($subwan_index+1)) 
              continue
         }||
         {        
             subwan_stats=`cat /proc/net/dev | grep $subwan_if | awk  '{print $11}'`
             subwan_total_stats=$(($subwan_total_stats+$subwan_stats)) 
-            subwan_num=$(($subwan_num+1)) 
+            subwan_index=$(($subwan_index+1)) 
         }    
     done
     all_stats=$(($subwan_total_stats+$wan_stats)) 
