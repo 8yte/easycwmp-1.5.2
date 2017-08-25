@@ -148,6 +148,12 @@ sub_entry_wandevice_wanconnectiondevice() {
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.DNSServers" "1" "wan_device_get_ipcx_dnsservers $iface" ""  
 			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.MACAddress" "0" "wan_device_get_ipcx_macaddr $iface"
 
+			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Stats." "0"
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Stats.EthernetBytesSent" "1" "wan_device_get_ipcx_ethbytessend $iface" ""
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Stats.EthernetBytesReceived" "1" "wan_device_get_ipcx_ethbytesrecv $iface" ""
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Stats.EthernetPacketsSent" "1" "wan_device_get_ipcx_ethpacketssend $iface" ""
+			common_execute_method_param "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.Stats.EthernetPacketsReceived" "1" "wan_device_get_ipcx_ethpacketsrecv $iface" ""
+
 			common_execute_method_obj "$DMROOT.WANDevice.1.WANConnectionDevice.$j.WANIPConnection.1.PortMapping." "1" "add_portmap_instances" "" "browse_portmap_instances $1"
 			
 			;;
@@ -1266,5 +1272,69 @@ wan_device_set_portmap_proto()
     uci set firewall.$1.proto="$2"
     uci commit firewall
     return 0
+}
+
+wan_device_get_ipcx_ethbytessend()
+{
+    local if_name=`uci get network.$1.ifname`
+    local bytessend=0
+    bytessend=`cat /proc/net/dev | grep $if_name | awk -F ":" '{print $2}' |awk '{print $9}' ` 
+    if [ "$bytessend" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+    {
+        echo $bytessend
+    }
+    fi
+}
+
+wan_device_get_ipcx_ethbytesrecv()
+{
+    local if_name=`uci get network.$1.ifname`
+    local bytesrecv=0
+    bytesrecv=`cat /proc/net/dev | grep $if_name | awk -F ":" '{print $2}' |awk '{print $1}' ` 
+    if [ "$bytesrecv" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+    {
+        echo $bytesrecv
+    }
+    fi
+}
+    
+wan_device_get_ipcx_ethpacketssend()
+{
+    local packetssend=0
+    local if_name=`uci get network.$1.ifname`
+    packetssend=`cat /proc/net/dev | grep $if_name | awk -F ":" '{print $2}' |awk '{print $10}' ` 
+    if [ "$packetsrecv" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+    {
+        echo $packetssend
+    }
+    fi
+}
+
+wan_device_get_ipcx_ethpacketsrecv()
+{
+    local packetsrecv=0
+    local if_name=`uci get network.$1.ifname`
+    packetsrecv=`cat /proc/net/dev | grep $if_name | awk -F ":" '{print $2}' |awk '{print $2}' ` 
+    if [ "$packetsrecv" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+    {
+        echo $packetsrecv
+    }
+    fi
 }
 
