@@ -15,8 +15,16 @@ entry_execute_method_root_LANDevice() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT.LANDevice."*)
 		common_execute_method_obj "$DMROOT.LANDevice." "0"
 		common_execute_method_obj "$DMROOT.LANDevice.1." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Number_Of_Entries $1"
+
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANHost." "0" 
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHost.LocalAddresses" "0" "" "" "" 
+
 		common_execute_method_obj "$DMROOT.LANDevice.1.WLANConfiguration." "1" "lan_device_add_wlan_iface" "" "lan_device_browse_instances_wlan_iface $1"
 		common_execute_method_obj "$DMROOT.LANDevice.1.Hosts." "0"
+		common_execute_method_obj "$DMROOT.LANDevice.1.Hosts.LANInterfaces." "0"
+		common_execute_method_param "$DMROOT.LANDevice.1.Hosts.LANInterfaces.LANEthernetInterfaceNumberOfEntries" "0" "get_lan_device_lan_ethernet_number_of_entries" "" "" 
+		common_execute_method_param "$DMROOT.LANDevice.1.Hosts.LANInterfaces.LANWLANConfigurationNumberOfEntries" "0" "get_lan_device_wlan_number_of_entries" "" "" 
+
 		common_execute_method_obj "$DMROOT.LANDevice.1.Hosts.Host." "0" "" "" "lan_device_browse_instances_Hosts_Host $1"
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Config $1"
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Config_Stats $1"
@@ -88,9 +96,22 @@ sub_entry_landevice_LAN_Host_Config_Management(){
 	local iface="$3"
 	case_param "$1" belongto "$DMROOT.LANDevice.1.LANHostConfigManagement." && {
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement." "0" "" ""
+
+
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.MACAddress" "0" "get_lan_device_lan_host_config_management_mac_addr" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_device_lan_host_config_management_dhcp_server_configenable" "set_lan_device_lan_host_config_management_dhcp_server_configenable" "" 		
 		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_device_lan_host_config_management_dhcp_server_enable" "set_lan_device_lan_host_config_management_dhcp_server_enable" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DHCPRelay" "0" "get_lan_device_lan_host_config_management_dhcp_relay" "" "" "1"
+
 		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.MinAddress" "1" "get_lan_device_lan_host_config_management_min_address" "set_lan_device_lan_host_config_management_min_address" "" "1"
 		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.MaxAddress" "1" "get_lan_device_lan_host_config_management_max_address" "set_lan_device_lan_host_config_management_max_address" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.ReservedAddresses" "0" "" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.SubnetMask" "1" "get_lan_device_lan_host_config_management_subnet_mask" "set_lan_device_lan_host_config_management_subnet_mask" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DNSServers" "1" "get_lan_device_lan_host_config_management_dns_servers" "set_lan_device_lan_host_config_management_dns_servers" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DomainName" "1" "get_lan_device_lan_host_config_management_domain_name" "set_lan_device_lan_host_config_management_domain_name" ""
+
+
+
 		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.DHCPLeaseTime" "1" "get_lan_device_lan_host_config_management_dhcp_lease_time" "set_lan_device_lan_host_config_management_dhcp_lease_time" "" "1"
 		return 0 
 	}
@@ -163,17 +184,11 @@ lan_device_browse_instances_LAN_Host_Config_Management_Ip_Interface(){
 
 # sub_entry_landevic_LAN_Ethernet_Interface_Number_Of_Entries #
 get_lan_device_lan_ethernet_interface_number_of_entries() {
-	local val=""
-	val="1"	
-	echo "$val"
-	return 0	
+	echo "1"
 }
 
 get_lan_device_lan_wlan_configuration_number_of_entries() {
-	local val=""
-	val="0"
-	echo "$val"
-	return 0	
+	echo "4"
 }
 
 # sub_entry_landevice_LAN_Ethernet_Interface_Config #
@@ -233,65 +248,85 @@ get_lan_device_lan_ethernet_interface_config_stats_packetsreceived(){
 
 # sub_entry_landevice_LAN_Host_Config_Management #
 get_lan_device_lan_host_config_management_dhcp_server_enable(){
-	local val=""
-	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPType -u uci_tmp.lan_information.dhcp_type > /tmp/mid_log
-	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.dhcp_enable`
-	echo "$val"
-	return 0
+    local cfgval=""
+    cfgval=`uci get /etc/config/dhcp.lan.ignore`
+    if [ "$cfgval" = "1" ];then
+        echo "0"
+    else
+        echo "1"
+    fi
+    return 0
 }
 set_lan_device_lan_host_config_management_dhcp_server_enable(){
-	echo "set _____start______"
-	local val=$1
-	local tmp1,tmp2,tmp3
-	tmp1=`/usr/bin/uci get /tmp/uci_tmp.lan_information.dhcp_start`
-	tmp2=`/usr/bin/uci get /tmp/uci_tmp.lan_information.dhcp_end`
-	tmp3=`/usr/bin/uci get /tmp/uci_tmp.lan_information.lease_time`
-	if [ "$val" = "enable" ]; then
-		#managemidapp -o cusconf -p {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\"","\"DHCPStart\"":"\"$tmp1\"","\"DHCPEnd\"":"\"$tmp2\"","\"LeaseTime\"":"\"$tmp3\""}}} > /tmp/mid_log
-		echo {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\"","\"DHCPStart\"":"\"$tmp1\"","\"DHCPEnd\"":"\"$tmp2\"","\"LeaseTime\"":"\"$tmp3\""}}} | socat stdio /tmp/cusconf1
-	else
-		#managemidapp -o cusconf -p {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\""}}} > /tmp/mid_log
-		echo {"\"ConfigSetReq\"":{"\"Oper\"":"\"LAN\"","\"LAN\"":{"\"DHCPType\"":"\"$val\""}}} | socat stdio /tmp/cusconf1
-	fi
-	
-	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.dhcp_enable="$val"
-	
+    local val=$1
+    if [ "$val" = "1" ];then
+        uci delete /etc/config/dhcp.lan.ignore
+    elif [ "$val" = "0" ];then
+        uci set /etc/config/dhcp.lan.ignore="1"        
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+    uci commit /etc/config/dhcp
+    /etc/init.d/dnsmasq restart
+    /etc/init.d/odhcpd  restart
+    return 0
 }
 
 get_lan_device_lan_host_config_management_min_address(){
-	local val=""
-	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPStart -u uci_tmp.lan_information.dhcp_start > /tmp/mid_log
-	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.range_from_ip`
-	echo "$val"
-	return 0
+    local lan_ip=`uci get network.lan.ipaddr`
+    local lan_pre=`echo ${lan_ip%.*}`
+    local start_base=`uci get dhcp.lan.start`
+    local min_addr="$lan_pre"".""$start_base"
+    echo $min_addr
 }
 set_lan_device_lan_host_config_management_min_address(){
-	local val=$1
-	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.range_from_ip="$val"
+   local setting_val=$1
+   local lan_start=`echo ${setting_val##*.}`
+   local lan_ip=`uci get network.lan.ipaddr`
+   local lan_pre=`echo ${lan_ip%.*}`
+   local min_addr="$lan_pre"".""$lan_start"
+
+   uci set dhcp.lan.start="$lan_start"
+   uci set network.lan.ipaddr="$min_addr"
+   uci commit dhcp
+   uci commit network
+   return 0
 }
 
 get_lan_device_lan_host_config_management_max_address(){
-	local val=""
-	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n DHCPEnd -u uci_tmp.lan_information.dhcp_end > /tmp/mid_log
-	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.range_to_ip`
-	echo "$val"
-	return 0
+    local lan_base=`uci get network.lan.ipaddr`
+    local lan_pre=`echo ${lan_base%.*}`
+    local lan_end=`echo ${lan_base##*.}`
+    local limit_addr=`uci get dhcp.lan.limit`
+    local max_ip=$(($limit_addr+$lan_end))
+    local max_addr="$lan_pre"".""$max_ip"
+    echo $max_addr
 }
 set_lan_device_lan_host_config_management_max_address(){
-	local val=$1
-	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.range_to_ip="$val"
+    local setting_val=$1
+    local max_ip=`echo ${setting_val##*.}`
+    local lan_base=`uci get network.lan.ipaddr`
+    local lan_pre=`echo ${lan_base%.*}`
+    local lan_end=`echo ${lan_base##*.}`
+    local limit_addr=$(($max_ip-$lan_end))
+    uci set dhcp.lan.limit="$limit_addr"
+    uci commit network
+    return 0
 }
 
 get_lan_device_lan_host_config_management_dhcp_lease_time(){
-	local val=""
-	#managemidapp -o cusconf -p {"\"ConfigGetReq\"":{"\"Oper\"":"\"LAN\""}} -n LeaseTime -u uci_tmp.lan_information.lease_time > /tmp/mid_log
-	val=`/usr/bin/uci get /etc/config/lte-gw.dhcp_srv.lease_time_min`
-	echo "$val"
-	return 0
+    local val=`uci get dhcp.lan.leasetime`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo "0"
+    fi
 }
 set_lan_device_lan_host_config_management_dhcp_lease_time(){
-	local val=$1
-	/usr/bin/uci set /etc/config/lte-gw.dhcp_srv.lease_time_min="$val"
+    local val=$1
+    uci set dhcp.lan.leasetime="$val"
+    uci commit dhcp
+    return 0
 }
 
 # sub_entry_landevice_LAN_Host_Config_Management_Ip_Interface #
@@ -386,4 +421,66 @@ lan_device_delete_wlan_iface() {
 	$UCI_DELETE wireless.$iface
 	$UCI_COMMIT
 	return 0
+}
+
+get_lan_device_lan_host_config_management_mac_addr()
+{
+    local val=`ifconfig | grep eth1 | head -1 | awk '{print$5}'`
+    echo $val
+}
+
+get_lan_device_lan_host_config_management_dhcp_server_configenable()
+{
+    echo "1"
+}
+
+get_lan_device_lan_host_config_management_dhcp_relay()
+{
+    echo "1"
+}
+
+get_lan_device_lan_host_config_management_subnet_mask()
+{
+    local val=`uci get network.lan.netmask`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo "0.0.0.0"
+    fi
+}
+
+set_lan_device_lan_host_config_management_subnet_mask()
+{
+    local val=$1
+    uci set network.lan.netmask="$val"
+    uci commit network
+    return 0
+}
+
+get_lan_device_lan_host_config_management_dns_servers()
+{
+    local val=`uci get network.lan.dns`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo "0.0.0.0"
+    fi
+}
+
+set_lan_device_lan_host_config_management_dns_servers()
+{
+    local val=$1
+    uci set network.lan.dns="$val"
+    uci commit network
+    return 0
+}
+
+get_lan_device_lan_ethernet_number_of_entries()
+{
+    echo "10"
+}
+
+get_lan_device_wlan_number_of_entries()
+{
+    echo "4"
 }
