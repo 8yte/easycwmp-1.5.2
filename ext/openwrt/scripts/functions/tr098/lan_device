@@ -70,8 +70,15 @@ sub_entry_landevice_LAN_Ethernet_Interface_Config() {
 	local iface="$3"
 	case_param "$1" belongto "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." && {
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Enable" "0" "get_lan_device_lan_ethernet_interface_config_enable" "" "" "1"
 		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.MACAddress" "0" "get_lan_device_lan_ethernet_interface_config_macaddress" "" "" "1"
 		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.Status" "0" "get_lan_device_lan_ethernet_interface_config_status" "" "" "1"
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.MACAddressControlEnabled" "0" "get_lan_device_lan_ethernet_interface_config_macenabled" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.MaxBitRate" "0" "get_lan_device_lan_ethernet_interface_config_maxbitrate" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.DuplexMode" "0" "" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1.X_CT-COM_Mode" "0" "" "" ""
+
+
 		return 0
 	}
 	return $E_INVALID_PARAMETER_NAME;
@@ -210,11 +217,13 @@ return 0
 }
 
 get_lan_device_lan_ethernet_interface_config_macaddress() {
-    local val=""
-	#managemidapp -o cusconf -p {"\"StatusGetReq\"":{"\"Oper\"":"\"LAN\""}} -n LANMAC -u uci_tmp.lan_information.lan_mac > /tmp/mid_log
-	val=`/usr/bin/uci get /tmp/uci_tmp.lan_information.lan_mac`
-	echo "$val"
-	return 0
+    local val=`uci get network.lan.macaddr`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo ""
+    fi
+    
 }
 
 # sub_entry_landevice_LAN_Ethernet_Interface_Config_Stats #
@@ -483,4 +492,19 @@ get_lan_device_lan_ethernet_number_of_entries()
 get_lan_device_wlan_number_of_entries()
 {
     echo "4"
+}
+
+get_lan_device_lan_ethernet_interface_config_enable()
+{
+    echo "1"
+}
+
+get_lan_device_lan_ethernet_interface_config_macenabled()
+{
+    echo "1"
+}
+
+get_lan_device_lan_ethernet_interface_config_maxbitrate()
+{
+    echo "100"
 }
