@@ -18,9 +18,9 @@ entry_execute_method_root_HttpGetDiagnostics() {
 		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.DiagnosticsState" "1" "httpget_get easycwmp.@local[0].DiagnosticsState" "httpget_set_diagnostic_state"
 		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.Interface" "1" "httpget_get easycwmp.@local[0].Interface" "httpget_set easycwmp.@local[0].Interface"
 		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.URL" "1" "httpget_get easycwmp.@local[0].URL" "httpget_set easycwmp.@local[0].URL"
-		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.HttpVersion" "1" "httpget_get easycwmp.@local[0].HttpVersion" "httpget_set easycwmp.@local[0].HttpVersion"
-		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.NumberOfRepetitions" "1" "httpget_get easycwmp.@local[0].NumberOfRepetitions" "httpget_set easycwmp.@local[0].NumberOfRepetitions"
-		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.Timeout" "1" "httpget_get easycwmp.@local[0].Timeout" "httpget_set easycwmp.@local[0].Timeout"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.HttpVersion" "1" "httpget_get_httpversion" "httpget_set easycwmp.@local[0].HttpVersion"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.NumberOfRepetitions" "1" "httpget_get_numberrepet" "httpget_set easycwmp.@local[0].NumberOfRepetitions"
+		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.Timeout" "1" "httpget_get_timeout" "httpget_set easycwmp.@local[0].Timeout"
 		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.SuccessCount" "0" "httpget_get easycwmp.@local[0].SuccessCount"  "xsd:unsignedInt"
 		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.FailureCount" "0" "httpget_get easycwmp.@local[0].FailureCount"  "xsd:unsignedInt"
 		common_execute_method_param "$DMROOT.X_CT-COM_HttpGetDiagnostics.MinimumResponseTime" "0" "httpget_get easycwmp.@local[0].MinimumResponseTime"  "xsd:unsignedInt"
@@ -72,3 +72,32 @@ httpget_stop_diagnostic() {
 	fi
 }
 
+httpget_get_httpversion()
+{
+    local val= `uci get easycwmp.@local[0].HttpVersion`
+    if [ "$val" != "" ]; then
+    	echo "$val"
+    else
+        echo "HTTP/1.0"
+    fi
+}
+
+httpget_get_numberrepet()
+{
+    local val= `uci get easycwmp.@local[0].NumberOfRepetitions`
+    if [ "$val" != "" ]; then
+    	echo "$val"
+    else
+        echo "5"
+    fi
+}
+
+httpget_get_timeout()
+{
+    local val= `uci get easycwmp.@local[0].Timeout`
+    if [ "$val" != "" ]; then
+    	echo "$val"
+    else
+        echo "5000"
+    fi
+}

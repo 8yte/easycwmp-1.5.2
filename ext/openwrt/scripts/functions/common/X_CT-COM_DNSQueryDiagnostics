@@ -19,8 +19,8 @@ entry_execute_method_root_DNSQueryDiagnostics() {
 		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.Interface" "1" "dnsquery_get easycwmp.@local[0].Interface" "dnsquery_set easycwmp.@local[0].Interface"
 		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.DNSServerIP" "1" "dnsquery_get easycwmp.@local[0].DNSServerIP" "dnsquery_set easycwmp.@local[0].DNSServerIP"
 		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.DomainName" "1" "dnsquery_get easycwmp.@local[0].DomainName" "dnsquery_set easycwmp.@local[0].DomainName"
-		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.NumberOfRepetitions" "1" "dnsquery_get easycwmp.@local[0].NumberOfRepetitions" "dnsquery_set easycwmp.@local[0].NumberOfRepetitions"
-		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.Timeout" "1" "dnsquery_get easycwmp.@local[0].Timeout" "dnsquery_set easycwmp.@local[0].Timeout" "xsd:unsignedInt"
+		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.NumberOfRepetitions" "1" "dnsquery_get_numberrepet" "dnsquery_set easycwmp.@local[0].NumberOfRepetitions"
+		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.Timeout" "1" "dnsquery_get_timeout" "dnsquery_set easycwmp.@local[0].Timeout" "xsd:unsignedInt"
 		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.SuccessCount" "1" "dnsquery_get easycwmp.@local[0].SuccessCount" 
 		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.FailureCount" "1" "dnsquery_get easycwmp.@local[0].FailureCount" 
 		common_execute_method_param "$DMROOT.X_CT-COM_DNSQueryDiagnostics.MinimumResponseTime" "1" "dnsquery_get easycwmp.@local[0].MinimumResponseTime" 
@@ -71,5 +71,25 @@ dnsquery_stop_diagnostic() {
 		kill -9 $pids
 		$UCI_SET_VARSTATE easycwmp.@local[0].DiagnosticsState=None
 	fi
+}
+
+dnsquery_get_numberrepet()
+{
+    local val= `uci get easycwmp.@local[0].NumberOfRepetitions`
+    if [ "$val" != "" ]; then
+    	echo "$val"
+    else
+        echo "5"
+    fi
+}
+
+dnsquery_get_timeout()
+{
+    local val= `uci get easycwmp.@local[0].Timeout`
+    if [ "$val" != "" ]; then
+    	echo "$val"
+    else
+        echo "5000"
+    fi
 }
 
