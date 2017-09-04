@@ -29,7 +29,7 @@ entry_execute_method_root_LANDevice() {
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Config $1"
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANEthernetInterfaceConfig.1." "0" "" "" "lan_device_browse_instances_LAN_Ethernet_Interface_Config_Stats $1"
 		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement." "0" "" "" "lan_device_browse_instances_LAN_Host_Config_Management $1"
-		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1." "0" "" "" "lan_device_browse_instances_LAN_Host_Config_Management_Ip_Interface $1"
+		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface." "0" "" "" "lan_device_browse_instances_LAN_Host_Config_Management_Ip_Interface $1"
 		return 0
 		;;
 	esac
@@ -143,19 +143,6 @@ sub_entry_landevice_LAN_Host_Config_Management(){
 	return $E_INVALID_PARAMETER_NAME;
 }
 
-sub_entry_landevice_LAN_Host_Config_Management_Ip_Interface(){
-	local j="$2"
-	local iface="$3"
-	case_param "$1" belongto "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1." && {
-		common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1." "0" "" ""
-		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1.IPInterfaceIPAddress" "1" "get_lan_device_lan_host_config_management_ip_interface_ip_interface_ip_address" "set_lan_device_lan_host_config_management_ip_interface_ip_interface_ip_address" "" "1"
-		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1.IPInterfaceSubnetMask" "0" "get_lan_device_lan_host_config_management_ip_interface_ip_interface_subnet_mask" "" "" "1"
-		common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.1.IPInterfaceAddressingType" "0" "get_lan_device_lan_host_config_management_ip_interface_ip_interface_addressing_type" "" "" "1"
-		return 0 
-	}
-	return $E_INVALID_PARAMETER_NAME;
-}
-
 #######################################
 #     Data model browse instances     #
 #######################################
@@ -196,9 +183,46 @@ lan_device_browse_instances_LAN_Host_Config_Management(){
 	return 0
 }
 
+sub_entry_landevice_IP_Interface()
+{
+    local j="$2"
+    local iface="$3"
+    case_param "$1" belongto "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.$j." && {
+	common_execute_method_obj "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.$j." "0" "" ""
+    	common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.$j.Enable" "1" "lan_device_get_host_enable $iface" "lan_device_set_host_enable $iface" 
+    	common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.$j.IPInterfaceIPAddress" "1" "lan_device_get_host_ip_interface $iface" "lan_device_set_host_ip_interface $iface" 
+    	common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.$j.IPInterfaceSubnetMask" "1" "lan_device_get_host_subnet_mask $iface" "lan_device_set_host_subnet_mask $iface" 
+    	common_execute_method_param "$DMROOT.LANDevice.1.LANHostConfigManagement.IPInterface.$j.IPInterfaceAddressingType" "1" "lan_device_get_host_addr_type $iface" "" 
+
+    	return 0
+    }
+    return $E_INVALID_PARAMETER_NAME;
+}
+
 lan_device_browse_instances_LAN_Host_Config_Management_Ip_Interface(){
-	sub_entry_landevice_LAN_Host_Config_Management_Ip_Interface "$1" "1" "1"
-	return 0
+    local j=0
+    local lan_iface=""
+    local lan_num=0
+    while [ $lan_num -le 7 ]
+    do
+        if [ $lan_num = 0 ];then
+          lan_iface="lan"
+        else
+          lan_iface="lan$lan_num"
+        fi
+        lan_proto=$(uci get network.$lan_iface.proto) &> /dev/null
+        [ -z $lan_proto ] &&
+        {
+             lan_num=$(($lan_num+1))
+             continue
+        }||
+        {
+            j=$(($j+1))
+            sub_entry_landevice_IP_Interface "$1" "$j" "$lan_iface"
+            lan_num=$(($lan_num+1))
+         }
+    done
+    return 0
 }
 
 
@@ -731,6 +755,66 @@ lan_device_get_wlan_apenable()
 {
     uci set wireless.ra0.radio="$2"
     uci commit wireless
+}
+
+lan_device_get_host_enable()
+{
+     local lan_if="$1"
+     local val=$(uci get network.$lan_if.proto) &> /dev/null
+     if [ "$val" != "" ]; then
+     {    
+         echo "1"
+     }
+     else
+         echo "0"
+     fi
+}
+
+lan_device_set_host_enable()
+{
     return 0
+}
+
+lan_device_get_host_ip_interface()
+{
+     local lan_if="$1"
+     local val=$(uci get network.$lan_if.ipaddr) &> /dev/null
+     if [ "$val" == "" ]; then
+     {    
+         echo "0.0.0.0"
+     }
+     else
+         echo "$val"
+     fi
+}
+
+lan_device_set_host_ip_interface()
+{
+    uci set network.$lan_if.ipaddr="$2"
+    uci commit network
+}
+
+lan_device_get_host_subnet_mask()
+{
+     local lan_if="$1"
+     local val=$(uci get network.$lan_if.netmask) &> /dev/null
+     if [ "$val" == "" ]; then
+     {    
+         echo "255.255.255.0"
+     }
+     else
+         echo "$val"
+     fi
+}
+
+lan_device_set_host_subnet_mask()
+{
+    uci set network.$lan_if.netmask="$2"
+    uci commit network
+}
+
+lan_device_get_host_addr_type()
+{
+    echo "bridge"
 }
 
