@@ -54,8 +54,26 @@ sub_entry_landevice_wlanconfig() {
 	local iface="$3"
 	case_param "$1" belongto "$DMROOT.LANDevice.1.WLANConfiguration.$j." && {
 		common_execute_method_obj "$DMROOT.LANDevice.1.WLANConfiguration.$j." "1" "" "lan_device_delete_wlan_iface $iface"
-		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.Enable" "1" "lan_device_get_wlan_enable" "lan_device_set_wlan_enable" "xsd:boolean"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.Enable" "1" "lan_device_get_wlan_enable $iface" "lan_device_set_wlan_enable $iface" "xsd:boolean"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.Status" "0" "lan_device_get_wlan_status" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.PossibleChannels" "0" "lan_device_get_wlan_possiblechannels" ""
 		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.SSID" "1" "$UCI_GET wireless.$iface.ssid" "lan_device_set_wlan_cfg wireless.$iface.ssid"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.WebAccessEnable" "1" "lan_device_get_wlan_webenable" "lan_device_set_wlan_webenable"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.Channel" "1" "lan_device_get_wlan_channel" "lan_device_set_wlan_channel"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.ChannelsInUse" "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.BeaconType" "0" "lan_device_get_wlan_beacontype $iface" "lan_device_set_wlan_beacontype $iface"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.BeaconAdvertisementEnabled" "1" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.Standard" "1" "lan_device_get_wlan_Standard" "lan_device_set_wlan_Standard"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.KeyPassphrase" "1" "lan_device_get_wlan_KeyPassphrase $iface" "lan_device_set_wlan_KeyPassphrase $iface"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.BasicEncryptionModes" "1" "lan_device_get_wlan_basicencrymodes $iface" "lan_device_set_wlan_basicencrymodes $iface"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.BasicAuthenticationMode" "1" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.RadioEnabled" "1" "lan_device_get_wlan_RadioEnabled" "lan_device_set_wlan_RadioEnabled"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.WPAEncryptionModes" "1" "lan_device_get_wlan_WPAEncryptionModes $iface" "lan_device_set_wlan_WPAEncryptionModes $iface"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_ChannelWidthandard" "1" "lan_device_get_wlan_channelwh" "lan_device_set_wlan_channelwh"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Powerlevel" "1" "lan_device_get_wlan_powerlevel" "lan_device_set_wlan_powerlevel"
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_APModuleEnable" "1" "lan_device_get_wlan_apenable" "lan_device_set_wlan_apenable"
+
+
 		return 0
 	}
 	return $E_INVALID_PARAMETER_NAME;
@@ -152,6 +170,7 @@ lan_device_browse_instances_wlan_iface() {
 	local iface ifaces=`$UCI_SHOW wireless | grep "wireless\.@wifi-iface\[.*\]=wifi-iface" | awk -F'[.=]' '{print $2}'` 
 	for iface in $ifaces; do
 		local j=`lan_device_update_instance $iface`
+		j=$(($j+1))
 		sub_entry_landevice_wlanconfig "$1" "$j" "$iface"
 	done
 	return 0
@@ -378,16 +397,35 @@ return 0
 
 
 lan_device_get_wlan_enable() {
-	local val=`$UCI_GET wireless.wl0.disabled 2> /dev/null`
-	[ "$val" = "1" ] && echo "0" || echo "1"
+    local iface=$1
+    local disabled=$(uci get wireless.$iface.disabled) &> /dev/null
+    if [ "$disabled" == "1" ]; then
+    {    
+        echo "0"
+    }
+    else
+        echo "1"
+    fi
 }
 
 lan_device_set_wlan_enable() {
-	local val="$1"
-	common_set_bool "wireless.wl0.disabled" "$val" "0" "1"
-	local e="$?"
-	[ "$e" != "0" ] && return $e
-	return 0
+    local iface=$1
+    local val=$2
+    if [ "$val" == "1" ]; then
+    {    
+        uci delete wireless.$iface.disabled
+        uci commit wireless    
+    }
+    elif [ "$val" == "0" ]; then
+    {
+        uci set wireless.$iface.disabled="1"
+        uci commit wireless    
+    }
+    else
+	return $E_INVALID_PARAMETER_VALUE;
+    fi
+    /etc/init.d/network restart &> /dev/null
+    return 0
 }
 
 lan_device_set_wlan_cfg() {
@@ -403,32 +441,30 @@ lan_device_get_wlan_max_instance() {
 }
 
 lan_device_update_instance() {
-	local iface="$1"
-	local instance=`$UCI_GET wireless.$iface.instance`
-	if [ -z "$instance" ]; then
-		instance=`lan_device_get_wlan_max_instance`
-		$UCI_SET wireless.$iface.instance=$((++instance))
-		$UCI_COMMIT
-	fi
-	echo $instance
+    local iface="$1"
+    local num=0
+    local ssid=`$UCI_GET wireless.$iface.ssid`
+    if [ -n "$ssid" ]; then
+        num=`echo $iface | cut -d '[' -f2 |cut -d ']' -f1`
+    fi
+    echo $num
 }
 
 lan_device_add_wlan_iface() {
-	local instance=`lan_device_get_wlan_max_instance`
-	local wifi_iface=`$UCI_ADD wireless wifi-iface`
-	$UCI_SET wireless.$wifi_iface.device=wl0
-	$UCI_SET wireless.$wifi_iface.encryption=none
-	$UCI_SET wireless.$wifi_iface.mode=ap
-	$UCI_SET wireless.$wifi_iface.ssid=DefaultSSID
-	$UCI_SET wireless.$wifi_iface.instance=$((++instance))
-	$UCI_COMMIT
-	echo $instance
+	local wifi_iface=`uci add wireless wifi-iface`
+	uci set wireless.$wifi_iface.device="wl0"
+	uci set wireless.$wifi_iface.encryption="none"
+	uci set wireless.$wifi_iface.mode="ap"
+	uci set wireless.$wifi_iface.ssid="DefaultSSID"
+	uci commit  wireless
+	/etc/init.d/network restart &> /dev/null
+	echo "1"
 }
 
 lan_device_delete_wlan_iface() {
 	local iface="$1"
-	$UCI_DELETE wireless.$iface
-	$UCI_COMMIT
+	uci delete wireless.$iface
+	uci commit wireless
 	return 0
 }
 
@@ -508,3 +544,193 @@ get_lan_device_lan_ethernet_interface_config_maxbitrate()
 {
     echo "100"
 }
+
+lan_device_get_wlan_status()
+{
+    local iface=$1
+    local disabled=$(uci get wireless.$iface.disabled) &> /dev/null
+    if [ "$disabled" == "1" ]; then
+    {    
+        echo "Disabled"
+    }
+    else
+        echo "UP"
+    fi
+}
+
+lan_device_get_wlan_possiblechannels()
+{
+    echo "1-13"
+}
+
+lan_device_get_wlan_channel()
+{
+    local val=`uci get wireless.ra0.channel`
+    if [ "$val" != "" ]; then
+        echo "$val"
+    else
+        echo "auto"
+    fi
+}
+
+lan_device_set_wlan_channel()
+{
+    uci set wireless.ra0.channel="$2"
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_beacontype()
+{
+    local iface=$1
+    local val=`uci get wireless.$iface.encryption`
+    if [ "$val" == "none" ]; then
+    {    
+        echo "None"
+    }
+    elif [ "$val" == "wep-open" -o "$val" == "wep-shared" ]; then
+        echo "Basic"
+    else
+        echo "WPA"
+    fi
+}
+
+lan_device_get_wlan_Standard()
+{
+    local val=`uci get wireless.ra0.wifimode`
+    if [ "$val" == "0" ]; then
+        echo "b"
+    elif [ "$val" == "1" ]; then
+        echo "g"
+    elif [ "$val" == "2" ]; then
+        echo "b,g"
+    elif [ "$val" == "3" ]; then
+        echo "n"
+    else
+        echo "b,g,n"        
+    fi
+}
+
+lan_device_set_wlan_Standard()
+{
+    local val=$1
+    if [ "$val" == "b" ]; then
+        uci set wireless.ra0.wifimode="0"
+    elif [ "$val" == "g" ]; then
+        uci set wireless.ra0.wifimode="1"
+    elif [ "$val" == "b,g" ]; then
+        uci set wireless.ra0.wifimode="2"
+    elif [ "$val" == "n" ]; then
+        uci set wireless.ra0.wifimode="3"
+    elif [ "$val" == "b,g,n" ]; then
+        uci set wireless.ra0.wifimode="4"
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_KeyPassphrase()
+{
+    local val=`uci get wireless.$1.key1`
+    if [ "$val" != "" ]; then
+        echo "$val"
+    else
+        echo "0123456789"
+    fi
+}
+
+lan_device_set_wlan_KeyPassphrase()
+{
+    uci get wireless.$1.key1="$2"
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_basicencrymodes()
+{
+    local val=`uci get wireless.$1.encryption`
+    if [ "$val" != "" ]; then
+        echo "$val"
+    else
+        echo "wep-open"
+    fi
+}
+lan_device_set_wlan_basicencrymodes()
+{
+    uci get wireless.$1.encryption="$2"
+    uci commit wireless
+    return 0
+
+}
+
+lan_device_get_wlan_RadioEnabled()
+{
+    local val=`uci get wireless.wifi-device.radio`
+    if [ "$val" != "" ]; then
+        echo "$val"
+    else
+        echo "1"
+    fi
+}
+
+lan_device_get_wlan_RadioEnabled()
+{
+    uci set wireless.wifi-device.radio="$2"
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_WPAEncryptionModes()
+{
+    local val=`uci get wireless.$1.encryption`
+    echo "$val"
+}
+
+lan_device_set_wlan_WPAEncryptionModes()
+{
+    uci set wireless.$1.encryption="$2"
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_channelwh()
+{
+    local val=`uci get wireless.ra0.bw`
+    echo "$val"
+}
+
+lan_device_set_wlan_channelwh()
+{
+    uci set wireless.ra0.bw="$2"
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_powerlevel()
+{
+    local val=`uci get wireless.ra0.txpower`
+    echo "$val"
+}
+
+lan_device_set_wlan_powerlevel()
+{
+    uci set wireless.ra0.txpower="$2"
+    uci commit wireless
+    return 0
+}
+
+lan_device_get_wlan_apenable()
+{
+    local val=`uci get wireless.ra0.radio`
+    echo "$val"
+}
+
+lan_device_get_wlan_apenable()
+{
+    uci set wireless.ra0.radio="$2"
+    uci commit wireless
+    return 0
+}
+
