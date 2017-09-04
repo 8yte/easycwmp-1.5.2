@@ -73,6 +73,20 @@ sub_entry_landevice_wlanconfig() {
 		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Powerlevel" "1" "lan_device_get_wlan_powerlevel" "lan_device_set_wlan_powerlevel"
 		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_APModuleEnable" "1" "lan_device_get_wlan_apenable" "lan_device_set_wlan_apenable"
 
+		common_execute_method_obj "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat." "0" "" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.CRCError" "0" "lan_device_get_wlan_crc_error" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.PHYError" "0" "lan_device_get_wlan_phy_error" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.MICError" "0" "lan_device_get_wlan_mic_error" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.KEYError" "0" "lan_device_get_wlan_key_error" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.ResourceUsing" "0" "lan_device_get_wlan_resUsing" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.LANTotalBytesSent" "0" "lan_device_get_bytessent $j" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.LANTotalBytesReceived" "0" "lan_device_get_bytesrecv" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.LANPacketsError" "0" "lan_device_get_packetserror" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.AskPass" "0" "lan_device_get_ackpass" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.BreakTime" "0" "lan_device_get_breaktime" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.ResponsePass" "0" "lan_device_get_responsepass" ""
+		common_execute_method_param "$DMROOT.LANDevice.1.WLANConfiguration.$j.X_CT-COM_Stat.SuccessPass" "0" "lan_device_get_sucesspass" ""
+
 
 		return 0
 	}
@@ -816,5 +830,88 @@ lan_device_set_host_subnet_mask()
 lan_device_get_host_addr_type()
 {
     echo "bridge"
+}
+
+lan_device_get_wlan_crc_error()
+{
+    echo "3"
+}
+
+lan_device_get_wlan_phy_error()
+{
+    echo "0"
+}
+
+lan_device_get_wlan_mic_error()
+{
+    echo "0"
+}
+
+lan_device_get_wlan_key_error()
+{
+    echo "0"
+}
+
+lan_device_get_wlan_resUsing()
+{
+    echo "10"
+}
+
+lan_device_get_bytessent()
+{
+    local if_name=`uci get wireless.$1.device`
+    local bytessend=0
+    bytessend=`cat /proc/net/dev | grep $if_name | awk -F ":" '{print $2}' |awk '{print $9}' ` 
+    if [ "$bytessend" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+    {
+        echo $bytessend
+    }
+    fi
+}
+
+lan_device_get_bytesrecv()
+{
+    local if_name=`uci get wireless.$1.device`
+    local bytesrecv=0
+    bytesrecv=`cat /proc/net/dev | grep $if_name | awk -F ":" '{print $2}' |awk '{print $1}' ` 
+    if [ "$bytesrecv" == "" ]; then
+    {    
+        echo "0"
+    }
+    else
+    {
+        echo $bytesrecv
+    }
+    fi
+
+}
+
+lan_device_get_packetserror()
+{
+    echo "0.2"
+}
+
+lan_device_get_ackpass()
+{
+   echo "10"
+}
+
+lan_device_get_breaktime()
+{
+    echo "0"
+}
+
+lan_device_get_responsepass()
+{
+   echo "10"
+}
+
+lan_device_get_sucesspass()
+{
+   echo "10"
 }
 
