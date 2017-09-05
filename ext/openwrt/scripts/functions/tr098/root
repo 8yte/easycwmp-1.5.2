@@ -12,8 +12,60 @@ entry_execute_method_list_forcedinform="$entry_method_root $entry_execute_method
 entry_execute_method_root() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT."*[^.])
 		common_execute_method_obj "$DMROOT." "0"
+		common_execute_method_param "$DMROOT.LANDeviceNumberOfEntries" "0" "device_get_landevice_number_entries" "" "" "1"
+		common_execute_method_param "$DMROOT.WANDeviceNumberOfEntries" "0" "device_get_wandevice_number_entries" "" "" "1"
 		return 0;
 		;;
 	esac
 	return $E_INVALID_PARAMETER_NAME;
 }
+
+device_get_landevice_number_entries()
+{
+    local lan_iface=""
+    local lan_num=0
+    local j=0
+    while [ $lan_num -le 7 ]
+    do
+        if [ $lan_num = 0 ];then
+          lan_iface="lan"
+        else
+          lan_iface="lan$lan_num"
+        fi
+        lan_proto=`uci get network.$lan_iface.proto`
+        [ -z $lan_proto ] &&
+        {
+             lan_num=$(($lan_num+1))
+             continue
+        }||
+        {
+            j=$(($j+1))
+            lan_num=$(($lan_num+1))
+        }
+    done
+    echo "$j"
+}
+
+device_get_wandevice_number_entries()
+{
+    local j=0
+    local wan_iface=""
+    local wan_num=1
+    while [ $wan_num -le 8 ]
+    do
+        wan_iface="subwan$wan_num"
+        wan_proto=`uci get network.$wan_iface.proto`
+        [ -z $wan_proto ] &&
+        {
+             wan_num=$(($wan_num+1))
+             continue
+        }||
+        {
+            j=$(($j+1))
+            wan_num=$(($wan_num+1))
+         }
+    done
+    echo "$j"
+}
+
+
