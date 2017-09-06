@@ -1,0 +1,157 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.X_CT-COM_VLAN."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_x_com_vlan"
+
+UCI_GET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get"
+UCI_SET_VARSTATE="/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set"
+
+entry_execute_method_root_x_com_vlan() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_VLAN."*)
+		common_execute_method_obj "$DMROOT.X_CT-COM_VLAN." "0"
+		common_execute_method_param "$DMROOT.X_CT-COM_VLAN.MaxNumberOfEntries" "0" "vlan_get_MaxNumberOfEntries" ""
+		common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANNumberOfEntries" "0" "vlan_get_VLANNumberOfEntries" ""
+		common_execute_method_obj "$DMROOT.X_CT-COM_VLAN.VLANConfig." "1" "add_vlan_config" "" "browse_vlan_config"
+
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+vlan_get_MaxNumberOfEntries()
+{
+    echo "8"
+}
+
+vlan_get_VLANNumberOfEntries()
+{
+    local lan_iface=""
+    local lan_num=0
+    local j=0
+    while [ $lan_num -le 7 ]
+    do
+        if [ $lan_num = 0 ];then
+          lan_iface="lan"
+        else
+          lan_iface="lan$lan_num"
+        fi
+        lan_proto=`uci get network.$lan_iface.proto`
+        [ -z $lan_proto ] &&
+        {
+             lan_num=$(($lan_num+1))
+             continue
+        }||
+        {
+            j=$(($j+1))
+            lan_num=$(($lan_num+1))
+        }
+    done
+    echo "$j"
+}
+
+add_vlan_config()
+{
+	local switch_vlan=`uci add network switch_vlan`
+	uci set network.$switch_vlan.vlan="0"
+	uci set network.$switch_vlan.ports="0"
+	uci commit  network
+	/etc/init.d/network restart &> /dev/null
+	echo "1"
+}
+
+browse_vlan_config(){
+    local j=0
+    local vlan_arry vlan_arrys=`uci show network | grep "network\.@switch_vlan\[.*\]=switch_vlan" | awk -F'[.=]' '{print $2}'` 
+    for vlan_arry in $vlan_arrys; do
+        local index=`echo $vlan_arry | cut -d '[' -f2 |cut -d ']' -f1`
+        j=$(($index+1))
+        sub_entry_vlan_config "$1" "$j" "$vlan_arry"
+    done
+    return 0
+}
+
+delete_vlan_config()
+{
+    local switch_vlan="$1"
+    uci delete network.$switch_vlan
+    uci commit network
+    /etc/init.d/network restart &> /dev/null
+    return 0
+}
+
+sub_entry_vlan_config()
+{
+    local j="$2"
+    local switch_vlan="$3"
+    case_param "$1" belongto "$DMROOT.-X_CTCOM_VLAN.VLANConfig.$j." && {
+	common_execute_method_obj "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j." "1" "" "delete_vlan_config $switch_vlan"
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.VlanId" "1" "vlan_vlanconfig_get_vlanid $switch_vlan" "vlan_vlanconfig_set_vlanid $switch_vlan" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.VlanName" "1" "vlan_vlanconfig_get_vlanname $switch_vlan" "vlan_vlanconfig_set_vlanname $switch_vlan" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.PortList" "1" "vlan_vlanconfig_get_portlist $switch_vlan" "vlan_vlanconfig_set_portlist $switch_vlan" 
+	common_execute_method_obj "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface." "0" "" ""
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.Enable" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceIPAddress" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceSubnetMask" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceAddressingType" "1" "" "" 
+    	
+	common_execute_method_obj "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig." "0" "" ""
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DHCPServerEnable" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.MinAddress" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.MaxAddress" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.ReservedAddresses" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.SubnetMask" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DNSServers" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DomainName" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DefaultGateway" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DHCPLeaseTime" "1" "" "" 
+    	return 0
+    }
+    return $E_INVALID_PARAMETER_NAME;
+}
+
+vlan_vlanconfig_get_vlanid()
+{
+    local vlanid=`uci get network.$1.vlan`
+    echo "$vlanid"    
+}
+
+vlan_vlanconfig_set_vlanid()
+{
+    ########port mode or vlan mode
+    local switch_vlan="$1"
+    local ifname=`uci get /etc/config/network.lan.ifname`
+    local port_ifname="eth1.1 eth1.2 eth1.3 eth1.4 eth1.5 eth1.6 eth1.7 eth1.8"
+    result=$(echo $ifname | grep "${port_ifname}")
+    if [[ "$result" != "" ]]
+    then
+        ######port
+        return 0
+    else
+        uci set network.$switch_vlan.vlan=$2  
+    fi
+}
+
+vlan_vlanconfig_get_vlanname()
+{
+     local vlanid=`uci get network.$1.vlan`
+     echo "vlan$vlanid"
+}
+
+vlan_vlanconfig_get_portlist()
+{
+    local vlan_portlist=`uci get network.$1.ports`
+    echo "$vlan_portlist"    
+}
+
+vlan_vlanconfig_set_portlist()
+{
+    uci set network.$1.ports="$2"
+    return  0
+}
