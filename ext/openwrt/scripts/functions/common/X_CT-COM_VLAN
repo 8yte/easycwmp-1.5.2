@@ -96,21 +96,21 @@ sub_entry_vlan_config()
     	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.VlanName" "1" "vlan_vlanconfig_get_vlanname $switch_vlan" "vlan_vlanconfig_set_vlanname $switch_vlan" 
     	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.PortList" "1" "vlan_vlanconfig_get_portlist $switch_vlan" "vlan_vlanconfig_set_portlist $switch_vlan" 
 	common_execute_method_obj "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface." "0" "" ""
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.Enable" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceIPAddress" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceSubnetMask" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.Enable" "1" "vlan_ipinterface_get_IPInterfaceEnable" "vlan_ipinterface_set_IPInterfaceEnable" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceIPAddress" "1" "vlan_ipinterface_get_IPInterfaceIPAddress $switch_vlan" "vlan_ipinterface_set_IPInterfaceIPAddress" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceSubnetMask" "1" "vlan_ipinterface_get_IPInterfaceSubnetMask $switch_vlan" "vlan_ipinterface_set_IPInterfaceSubnetMask $switch_vlan" 
     	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.IPInterface.IPInterfaceAddressingType" "1" "" "" 
     	
 	common_execute_method_obj "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig." "0" "" ""
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DHCPServerEnable" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.MinAddress" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.MaxAddress" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DHCPServerEnable" "1" "vlan_dhcpconfig_get_DHCPServerEnable $switch_vlan" "vlan_dhcpconfig_set_DHCPServerEnable $switch_vlan" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.MinAddress" "1" "vlan_dhcpconfig_get_MinAddress $switch_vlan" "vlan_dhcpconfig_set_MinAddress $switch_vlan" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.MaxAddress" "1" "vlan_dhcpconfig_get_MaxAddress $switch_vlan" "vlan_dhcpconfig_set_MaxAddress $switch_vlan" 
     	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.ReservedAddresses" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.SubnetMask" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DNSServers" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.SubnetMask" "1" "vlan_dhcpconfig_get_SubnetMask $switch_vlan" "vlan_dhcpconfig_set_SubnetMask $switch_vlan" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DNSServers" "1" "vlan_dhcpconfig_get_DNSServers $switch_vlan" "vlan_dhcpconfig_set_DNSServers $switch_vlan" 
     	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DomainName" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DefaultGateway" "1" "" "" 
-    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DHCPLeaseTime" "1" "" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DefaultGateway" "1" "vlan_dhcpconfig_get_DefaultGateway $switch_vlan" "vlan_dhcpconfig_set_DefaultGateway $switch_vlan" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_VLAN.VLANConfig.$j.DHCPConfig.DHCPLeaseTime" "1" "vlan_dhcpconfig_get_DHCPLeaseTime $switch_vlan" "vlan_dhcpconfig_set_DHCPLeaseTime $switch_vlan" 
     	return 0
     }
     return $E_INVALID_PARAMETER_NAME;
@@ -155,3 +155,228 @@ vlan_vlanconfig_set_portlist()
     uci set network.$1.ports="$2"
     return  0
 }
+
+vlan_ipinterface_get_IPInterfaceEnable()
+{
+    echo "1"
+}
+
+vlan_ipinterface_set_IPInterfaceEnable()
+{
+    if [ "$1" = "1" ];then
+             /etc/init.d/network restart &> /dev/null
+    fi
+    return 0
+}
+
+find_lan_interface_by_vlanid()
+{
+    FILENAME="/tmp/test.txt"
+    brctl show > /tmp/test.txt
+    while read LINE
+    do
+        eth1_vlanid=`echo $LINE | awk '{print $4;}' | awk -F "." '{print $2;}'`
+        if [ "$eth1_vlanid" = "$vlanid" ];then
+             br_name=`echo $LINE | awk '{print $1;}'`
+             lan_interface=`echo ${br_name##*-}`
+             break
+        fi
+    done < $FILENAME
+    echo "$lan_interface"
+}
+
+vlan_ipinterface_get_IPInterfaceIPAddress()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    local ipaddr=`uci get network.$lan_if.ipaddr`       
+    echo "$ipaddr"
+}
+
+vlan_ipinterface_set_IPInterfaceIPAddress()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    if [ -n "$lan_if" ]; then
+        uci set network.$lan_if.ipaddr="$2"
+    fi
+    return 0
+}
+
+vlan_ipinterface_get_IPInterfaceSubnetMask()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    local netmask=`uci get network.$lan_if.netmask`       
+    echo "$netmask"
+}
+
+vlan_ipinterface_set_IPInterfaceSubnetMask()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    if [ -n "$lan_if" ]; then
+        uci set network.$lan_if.netmask="$2"
+    fi
+    return 0
+}
+
+vlan_dhcpconfig_get_DHCPServerEnable()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local cfgval=""
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    cfgval=`uci get /etc/config/dhcp.$lan_if.ignore`
+    if [ "$cfgval" = "1" ];then
+        echo "0"
+    else
+        echo "1"
+    fi
+    return 0
+
+}
+
+vlan_dhcpconfig_set_DHCPServerEnable()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    local val=$1
+    if [ "$val" = "1" ];then
+        uci delete /etc/config/dhcp.$lan_if.ignore
+    elif [ "$val" = "0" ];then
+        uci set /etc/config/dhcp.$lan_if.ignore="1"        
+    else
+        return $E_INVALID_PARAMETER_VALUE
+    fi
+    uci commit /etc/config/dhcp
+    /etc/init.d/dnsmasq restart
+    /etc/init.d/odhcpd  restart
+    return 0
+}
+
+vlan_dhcpconfig_get_MinAddress()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    local lan_ip=`uci get network.$lan_if.ipaddr`
+    local lan_pre=`echo ${lan_ip%.*}`
+    local start_base=`uci get dhcp.$lan_if.start`
+    local min_addr="$lan_pre"".""$start_base"
+    echo $min_addr
+}
+
+vlan_dhcpconfig_set_MinAddress()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    local setting_val=$1
+    local lan_start=`echo ${setting_val##*.}`
+    local lan_ip=`uci get network.$lan_if.ipaddr`
+    local lan_pre=`echo ${lan_ip%.*}`
+    local min_addr="$lan_pre"".""$lan_start"
+ 
+    uci set dhcp.lan.start="$lan_start"
+    uci set network.lan.ipaddr="$min_addr"
+    uci commit dhcp
+    uci commit network
+    return 0
+}
+
+vlan_dhcpconfig_get_MaxAddress()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+
+    local lan_base=`uci get network.$lan_if.ipaddr`
+    local lan_pre=`echo ${lan_base%.*}`
+    local lan_end=`echo ${lan_base##*.}`
+    local limit_addr=`uci get dhcp.$lan_if.limit`
+    local max_ip=$(($limit_addr+$lan_end))
+    local max_addr="$lan_pre"".""$max_ip"
+    echo $max_addr
+}
+
+vlan_dhcpconfig_get_SubnetMask()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+
+    local val=`uci get network.$lan_if.netmask`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo "0.0.0.0"
+    fi
+}
+
+vlan_dhcpconfig_set_SubnetMask()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+
+    local val="$1"
+    uci set network.lan_if.netmask="$val"
+    uci commit network
+    return 0
+}
+
+vlan_dhcpconfig_get_DNSServers()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+
+    local val=`uci get network.$lan_if.dns`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo "0.0.0.0"
+    fi
+}
+
+vlan_dhcpconfig_set_DNSServers()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+
+    local val="$1"
+    uci set network.$lan_if.dns="$val"
+    uci commit network
+    return 0
+}
+
+vlan_dhcpconfig_get_DefaultGateway()
+{
+    local defalut_gateway=`uci get network.$1.gateway`
+    echo "$defalut_gateway"    
+}
+
+vlan_dhcpconfig_set_DefaultGateway()
+{
+    uci get network.$1.gateway="$2"
+    return 0
+}
+
+vlan_dhcpconfig_get_DHCPLeaseTime()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+    
+    local val=`uci get dhcp.$lan_if.leasetime`
+    if [ -n "$val" ]; then
+        echo "$val"
+    else
+        echo "0"
+    fi
+}
+
+vlan_dhcpconfig_get_DHCPLeaseTime()
+{
+    local vlanid=`uci get network.$1.vlan`
+    local lan_if=`find_lan_interface_by_vlanid $vlanid`
+
+    local val="$1"
+    uci set dhcp.$lan_if.leasetime="$val"
+    uci commit dhcp
+    return 0
+}
+
