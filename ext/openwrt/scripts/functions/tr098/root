@@ -12,6 +12,7 @@ entry_execute_method_list_forcedinform="$entry_method_root $entry_execute_method
 entry_execute_method_root() {
 	case "$1" in ""|"$DMROOT."|"$DMROOT."*[^.])
 		common_execute_method_obj "$DMROOT." "0"
+		common_execute_method_param "$DMROOT.DeviceSummary" "0" "device_get_DeviceSummary" "" "" "1"
 		common_execute_method_param "$DMROOT.LANDeviceNumberOfEntries" "0" "device_get_landevice_number_entries" "" "" "1"
 		common_execute_method_param "$DMROOT.WANDeviceNumberOfEntries" "0" "device_get_wandevice_number_entries" "" "" "1"
 		return 0;
@@ -68,4 +69,9 @@ device_get_wandevice_number_entries()
     echo "$j"
 }
 
+device_get_DeviceSummary()
+{
+    local ports=`uci get system.info.allports`
+    echo "InternetGatewayDevice:1.0[](Baseline:1, EthernetLAN:$ports, WiFiLAN:4, EthernetWAN:1, Time:1, IPPing:1)"
+}
 
