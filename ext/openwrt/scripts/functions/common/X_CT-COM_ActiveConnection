@@ -1,0 +1,88 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: MOHAMED Kallel <mohamed.kallel@pivasoftware.com>
+
+#############################
+#   Entry point functuons   #
+#############################
+
+prefix_list="$prefix_list $DMROOT.X_CT-COM_ActiveConnection."
+entry_execute_method_list="$entry_execute_method_list entry_execute_method_root_ActiveConnection"
+
+
+entry_execute_method_root_ActiveConnection() {
+	case "$1" in ""|"$DMROOT."|"$DMROOT.X_CT-COM_ActiveConnection."*)
+		common_execute_method_obj "$DMROOT.X_CT-COM_ActiveConnection." "0" "" "" "active_connection_browse_instances $1"
+		common_execute_method_param "$DMROOT.X_CT-COM_ActiveConnection.UserName" "1" "echo 111111" ""
+		return 0;
+		;;
+	esac
+	return $E_INVALID_PARAMETER_NAME;
+}
+
+active_connection_update_instance()
+{
+    local subwan_index_max=8
+    local i=1
+    local int count=1
+
+    ##subwan interface                     
+    while [ $i -lt $subwan_index_max ]   
+    do                                                                                                                                 
+            wan_iface="subwan$subwan_index"         
+            wan_up=$(uci get  -p /var/state/ network.$wan_iface.up) &> /dev/null
+
+            if [ "$wan_up" == "1" ]; then
+            {                  
+                 count=$(($count+1))
+            }      
+            fi
+            i=$(($i+1))
+    done
+    echo $count
+}
+
+active_connection_browse_instances()
+{
+    local subwan_index_max=8
+    local i=1
+    local int count=0
+
+    while [ $i -lt $subwan_index_max ]
+    do                                                                                                                                 
+            wan_iface="subwan$i"         
+            wan_up=$(uci get  -p /var/state/ network.$wan_iface.up) &> /dev/null
+
+            if [ "$wan_up" == "1" ]; then
+            {                  
+                 count=$(($count+1))
+                 sub_entry_active_connection "$1" "$count" "$wan_iface" "$i"
+            }      
+            fi
+            i=$(($i+1))
+    done
+}
+
+sub_entry_active_connection()
+{
+    local j="$2"
+    local wan_if="$3" 
+    local wan_instance="$4"
+    case_param "$1" belongto "$DMROOT.X_CT-COM_ActiveConnection.$j." && {
+	common_execute_method_obj "$DMROOT.X_CT-COM_ActiveConnection.$j." "0" "" ""
+    	common_execute_method_param "$DMROOT.X_CT-COM_ActiveConnection.$j.ActiveConnectionDeviceContainer" "0" "active_connection_get_DeviceContainer $wanif $wan_instance" "" 
+    	common_execute_method_param "$DMROOT.X_CT-COM_ActiveConnection.$j.ActiveConnectionServiceID" "0" "active_connection_get_ServiceID $wanif $wan_instance" "" 
+    	return 0
+    }
+    return $E_INVALID_PARAMETER_NAME;
+}
+
+active_connection_get_DeviceContainer()
+{
+    echo "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.$2"
+}
+
+active_connection_get_ServiceID()
+{
+    echo "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.$2"
+}
