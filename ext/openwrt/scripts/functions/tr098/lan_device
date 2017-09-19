@@ -462,7 +462,7 @@ lan_device_set_wlan_enable() {
     else
 	return $E_INVALID_PARAMETER_VALUE;
     fi
-    /etc/init.d/network restart &> /dev/null
+    wifi restart &> /dev/null
     return 0
 }
 
@@ -613,7 +613,7 @@ lan_device_get_wlan_channel()
 
 lan_device_set_wlan_channel()
 {
-    uci set wireless.ra0.channel="$2"
+    uci set wireless.ra0.channel="$1"
     uci commit wireless
     return 0
 }
